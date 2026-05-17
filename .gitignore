@@ -1,0 +1,11 @@
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+xcuserdata/
+bin/Magic-Sand
+bin/*.exe
+obj/
+*.o
+*.d
+bin/libs/
