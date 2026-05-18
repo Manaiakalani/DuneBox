@@ -23,7 +23,7 @@ A cross-platform augmented reality sandbox that projects real-time topographic m
 |---|---|
 | **Kinect** | Kinect v1 (Xbox 360) — best supported |
 | **Projector** | Short-throw, 4:3 aspect, HDMI output |
-| **PC** | x86 quad-core + Nvidia GPU for water sim (Quadro P400 minimum) |
+| **PC** | x86 quad-core + Nvidia GPU for water sim (Quadro P620 minimum) |
 | **Sandbox** | 40"×30" plywood box (4:3 ratio), Sandtastik White Play Sand |
 
 ## Quick Start
