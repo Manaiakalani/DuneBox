@@ -99,3 +99,7 @@ DuneBox builds on the work of the open-source AR sandbox community:
 ## License
 
 Licensed under [GPL-2.0](COPYING), inherited from Magic-Sand and SARndbox.
+
+## Build Guide
+
+See **[DuneBox-docs](https://github.com/Manaiakalani/DuneBox-docs)** for the complete build guide — hardware, physical construction, software setup, calibration, troubleshooting, and customization.
