@@ -47,6 +47,7 @@ public:
     }
     
     bool setKeys(std::vector<ofColor> colorkeys, std::vector<double> heightkeys); // Set keys
+    bool applyKeys(const std::vector<HeightMapKey>& keys); // Replace all keys and rebuild
     bool updateColormap(void);    // Update colormap based on stored colorkeys
     bool setColorKey(int key, ofColor color);
     bool setHeightKey(int key, float height);
