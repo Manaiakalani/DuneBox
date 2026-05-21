@@ -94,6 +94,12 @@ private:
 	// Lava mode state
 	int preLavaThemeIndex;  // theme to restore when lava deactivates
 
+	// Volcano eruption state (bridge-triggered or manual)
+	bool volcanoEruptionActive = false;
+	float volcanoEruptionTimer = 0.0f;
+	float volcanoSourceX = 0.0f;
+	float volcanoSourceY = 0.0f;
+
 	// Inter-app bridge (Python ↔ C++)
 	Bridge bridge;
 	int bridgeFrameCounter = 0;
