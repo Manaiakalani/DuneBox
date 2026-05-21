@@ -39,6 +39,10 @@ void ofApp::setup() {
 	// Setup sandSurfaceRenderer
 	sandSurfaceRenderer = new SandSurfaceRenderer(kinectProjector, projWindow);
 	sandSurfaceRenderer->setup(true);
+
+	// Theme display overlay state
+	themeDisplayName = sandSurfaceRenderer->getThemeName();
+	themeDisplayTimer = 0;
 	
 	// Retrieve variables
 	ofVec2f kinectRes = kinectProjector->getKinectRes();
@@ -80,10 +84,18 @@ void ofApp::setup() {
 
 	ofLogNotice("ofApp") << "Water simulation initialized (" << waterW << "x" << waterH
 	                     << "). Press 'w' to toggle.";
+
+	// Run startup diagnostics
+	diagnostics.probe();
 }
 
 
 void ofApp::update() {
+	// Tick diagnostics timer
+	if (diagnostics.isActive()) {
+		diagnostics.update(ofGetLastFrameTime());
+	}
+
     // Call kinectProjector->update() first during the update function()
 	kinectProjector->update();
    	sandSurfaceRenderer->update();
@@ -98,6 +110,10 @@ void ofApp::update() {
 
 	mapGameController.update();
 	boidGameController.update();
+
+	// Theme display timer
+	if (themeDisplayTimer > 0)
+		themeDisplayTimer -= ofGetLastFrameTime();
 
 	// --- Water simulation update ---
 	if (waterSim.isEnabled()) {
@@ -139,6 +155,44 @@ void ofApp::draw()
 	}
 
 	kinectProjector->drawMainWindow(x, y, w, h);
+
+	// Theme name indicator (bottom-left corner)
+	{
+		std::string name = sandSurfaceRenderer->getThemeName();
+		float alpha = 180;
+		if (themeDisplayTimer > 0) {
+			// Bright flash when recently switched
+			alpha = 255;
+			if (themeDisplayTimer < 0.5f)
+				alpha = ofMap(themeDisplayTimer, 0, 0.5f, 180, 255);
+		}
+		int tx = 12;
+		int ty = ofGetHeight() - 14;
+		// Shadow
+		ofSetColor(0, 0, 0, (int)(alpha * 0.7f));
+		ofDrawBitmapString("Theme: " + name, tx + 1, ty + 1);
+		// Foreground
+		ofSetColor(255, 255, 255, (int)alpha);
+		ofDrawBitmapString("Theme: " + name, tx, ty);
+		ofSetColor(255);
+	}
+
+	// Theme switch banner (temporary large text)
+	if (themeDisplayTimer > 0) {
+		float fade = (themeDisplayTimer < 0.5f) ? themeDisplayTimer / 0.5f : 1.0f;
+		int cx = ofGetWidth() / 2 - (int)(themeDisplayName.length() * 4);
+		int cy = ofGetHeight() / 2;
+		ofSetColor(0, 0, 0, (int)(200 * fade));
+		ofDrawBitmapString(themeDisplayName, cx + 1, cy + 1);
+		ofSetColor(255, 255, 80, (int)(255 * fade));
+		ofDrawBitmapString(themeDisplayName, cx, cy);
+		ofSetColor(255);
+	}
+
+	// Diagnostics overlay (drawn on top, auto-dismisses)
+	if (diagnostics.isActive()) {
+		diagnostics.draw();
+	}
 }
 
 void ofApp::drawProjWindow(ofEventArgs &args) 
@@ -172,6 +226,12 @@ void ofApp::drawProjWindow(ofEventArgs &args)
 
 void ofApp::keyPressed(int key) 
 {
+	// Dismiss diagnostics on any key
+	if (diagnostics.isActive()) {
+		diagnostics.onKeyPressed();
+		return;
+	}
+
 	if (key == 'c')
 	{
 		kinectProjector->SaveKinectColorImage();
@@ -258,6 +318,15 @@ void ofApp::keyPressed(int key)
 	}
 	else if (key == 't')
 	{
+		// Cycle color theme (biome mode)
+		sandSurfaceRenderer->cycleTheme();
+		themeDisplayName = sandSurfaceRenderer->getThemeName();
+		themeDisplayTimer = 2.5f; // show name for 2.5 seconds
+		ofLogNotice("ofApp") << "Theme: " << themeDisplayName;
+	}
+	else if (key == 'T')
+	{
+		// Debug: RealTimeTestMe (was on 't')
 		mapGameController.setDebug(kinectProjector->getDumpDebugFiles());
 		mapGameController.RealTimeTestMe();
 	}
