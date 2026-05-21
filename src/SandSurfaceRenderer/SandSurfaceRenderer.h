@@ -88,6 +88,11 @@ public:
     void setTheme(int index);
     void cycleTheme();
     std::string getThemeName() const;
+
+    // Day/night cycle
+    void toggleDayNight();
+    bool isDayNightEnabled() const;
+    float getTimeOfDay() const;
     int getThemeIndex() const;
    
 private:
@@ -143,6 +148,11 @@ private:
 
     // Color themes
     ColorThemeManager themeManager;
+
+    // Day/night cycle
+    float timeOfDay;           // 0.0–1.0 (0=midnight, 0.5=noon)
+    float dayNightCycleSpeed;  // seconds per full cycle
+    bool dayNightEnabled;      // toggle with 'n' key
     
 	float heightMapScale,heightMapOffset; // Scale and offset values to convert from elevation to height color map texture coordinates
     float contourLineFboScale, contourLineFboOffset; // Scale and offset values to convert depth from contourline shader values to real values
