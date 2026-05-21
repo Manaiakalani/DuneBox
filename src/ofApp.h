@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "Games/MapGameController.h"
 #include "Games/BoidGameController.h"
 #include "WaterSimulation/WaterSimulation.h"
+#include "Diagnostics.h"
 
 class ofApp : public ofBaseApp {
 
@@ -68,4 +69,11 @@ private:
 
 	// Main window ROI 
 	ofRectangle mainWindowROI;
+
+	// Theme display overlay
+	std::string themeDisplayName;
+	float themeDisplayTimer;
+
+	// Startup diagnostics
+	Diagnostics diagnostics;
 };
