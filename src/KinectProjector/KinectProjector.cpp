@@ -87,7 +87,31 @@ void KinectProjector::setup(bool sdisplayGui)
     maxOffsetSafeRange = 50; // Range above the autocalib measured max offset
 
     // kinectgrabber: start & default setup
-	kinectOpened = kinectgrabber.setup();
+    // Read kinect version from settings (1=V1, 2=V2, 3=Azure/Orbbec)
+    kinectVersion = 1;  // default to V1
+    {
+        ofXml vxml;
+        if (vxml.load("settings/kinectProjectorSettings.xml")) {
+            if (vxml.setTo("KINECTSETTINGS")) {
+                kinectVersion = vxml.getValue<int>("kinectVersion", 1);
+            }
+        }
+    }
+    ofLogNotice("KinectProjector") << "Using kinectVersion=" << kinectVersion;
+
+    if (kinectVersion == 2) {
+        kinectOpened = kinectV2.setup();
+        if (kinectOpened) {
+            ofLogNotice("KinectProjector") << "Kinect V2 initialised";
+        }
+    } else if (kinectVersion == 3) {
+        kinectOpened = azureKinect.setup();
+        if (kinectOpened) {
+            ofLogNotice("KinectProjector") << "Azure Kinect / Orbbec Femto Bolt initialised";
+        }
+    } else {
+        kinectOpened = kinectgrabber.setup();
+    }
 	lastKinectOpenTry = ofGetElapsedTimef(); 
 	if (!kinectOpened)
 	{
@@ -104,7 +128,13 @@ void KinectProjector::setup(bool sdisplayGui)
     
     // Get projector and kinect width & height
     projRes = ofVec2f(projWindow->getWidth(), projWindow->getHeight());
-    kinectRes = kinectgrabber.getKinectSize();
+    if (kinectVersion == 2) {
+        kinectRes = kinectV2.getDepthResolution();
+    } else if (kinectVersion == 3) {
+        kinectRes = azureKinect.getDepthResolution();
+    } else {
+        kinectRes = kinectgrabber.getKinectSize();
+    }
 	kinectROI = ofRectangle(0, 0, kinectRes.x, kinectRes.y);
 	ofLogVerbose("KinectProjector") << "KinectProjector.setup(): kinectROI " << kinectROI;
 
@@ -1870,6 +1900,7 @@ bool KinectProjector::loadSettings(){
     numAveragingSlots = xml.getValue<int>("numAveragingSlots");
 	doInpainting = xml.getValue<bool>("OutlierInpainting", false);
 	doFullFrameFiltering = xml.getValue<bool>("FullFrameFiltering", false);
+    kinectVersion = xml.getValue<int>("kinectVersion", 1);
     return true;
 }
 
@@ -1890,6 +1921,7 @@ bool KinectProjector::saveSettings()
     xml.addValue("numAveragingSlots", numAveragingSlots);
 	xml.addValue("OutlierInpainting", doInpainting);
 	xml.addValue("FullFrameFiltering", doFullFrameFiltering);
+	xml.addValue("kinectVersion", kinectVersion);
 	xml.setToParent();
     return xml.save(settingsFile);
 }

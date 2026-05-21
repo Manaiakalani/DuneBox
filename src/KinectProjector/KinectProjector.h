@@ -29,6 +29,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "ofxOpenCv.h"
 #include "ofxCv.h"
 #include "KinectGrabber.h"
+#include "KinectV2Handler.h"
+#include "AzureKinectHandler.h"
 #include "ofxModal.h"
 
 #include "KinectProjectorCalibration.h"
@@ -284,6 +286,14 @@ private:
     int                         numAveragingSlots;
 	bool                        doInpainting;
 	bool                        doFullFrameFiltering;
+
+    // Alternative sensor handlers (selected via kinectVersion setting)
+    // kinectVersion: 1 = Kinect V1 (default, ofxKinect)
+    //               2 = Kinect V2 (ofxKinectV2, requires DUNEBOX_USE_KINECT_V2)
+    //               3 = Azure Kinect / Orbbec Femto Bolt (requires DUNEBOX_USE_AZURE_KINECT)
+    int                         kinectVersion;  // 1, 2, or 3
+    KinectV2Handler             kinectV2;
+    AzureKinectHandler          azureKinect;
 
     //kinect buffer
     ofxCvFloatImage             FilteredDepthImage;
