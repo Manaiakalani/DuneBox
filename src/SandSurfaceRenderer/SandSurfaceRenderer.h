@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "ofMain.h"
 #include "../KinectProjector/KinectProjector.h"
 #include "ColorMap.h"
+#include "ColorTheme.h"
 
 
 class SaveModal : public ofxModalWindow
@@ -82,6 +83,11 @@ public:
     void onScrollViewEvent(ofxDatGuiScrollViewEvent e);
     void onSaveModalEvent(ofxModalEvent e);
     void exit(ofEventArgs& e);
+
+    // Color theme (biome mode)
+    void setTheme(int index);
+    void cycleTheme();
+    std::string getThemeName() const;
    
 private:
     // Private methods
@@ -94,6 +100,7 @@ private:
     void populateColorList();
     bool loadSettings();
     bool saveSettings();
+    void applyThemeToHeightMap();
     
     // shared pointers
     std::shared_ptr<KinectProjector> kinectProjector;
@@ -132,6 +139,9 @@ private:
     std::vector<string> colorMapFilesList;
     ColorMap    heightMap;
     std::vector<ColorMap::HeightMapKey> heightMapKeys;
+
+    // Color themes
+    ColorThemeManager themeManager;
     
 	float heightMapScale,heightMapOffset; // Scale and offset values to convert from elevation to height color map texture coordinates
     float contourLineFboScale, contourLineFboOffset; // Scale and offset values to convert depth from contourline shader values to real values
