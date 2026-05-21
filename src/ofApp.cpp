@@ -21,6 +21,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 #include "ofApp.h"
 
+ofApp::~ofApp() {
+	delete sandSurfaceRenderer;
+	sandSurfaceRenderer = nullptr;
+}
+
 void ofApp::setup() {
 	// OF basics
 	ofSetFrameRate(60);
