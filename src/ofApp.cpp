@@ -87,6 +87,9 @@ void ofApp::setup() {
 
 	// Run startup diagnostics
 	diagnostics.probe();
+
+	// Inter-app bridge to DuneBox-sandcam
+	bridge.setup("127.0.0.1", 9876);
 }
 
 
@@ -110,6 +113,36 @@ void ofApp::update() {
 
 	mapGameController.update();
 	boidGameController.update();
+
+	// --- Inter-app bridge ---
+	bridge.update();
+	for (auto& msg : bridge.poll()) {
+		std::string type = msg.value("type", "");
+		if (type == "marker_detected") {
+			int markerId = msg.value("marker_id", -1);
+			ofLogNotice("Bridge") << "Marker detected: " << markerId;
+		} else if (type == "mode_change") {
+			std::string mode = msg.value("mode", "");
+			bool on = msg.value("enabled", false);
+			if (mode == "water") {
+				waterSim.setEnabled(on);
+				ofLogNotice("Bridge") << "Water simulation: " << (on ? "ON" : "OFF");
+			}
+		} else if (type == "pong") {
+			ofLogVerbose("Bridge") << "Pong received";
+		}
+	}
+
+	// Send water status every 60 frames
+	bridgeFrameCounter++;
+	if (bridgeFrameCounter >= 60) {
+		bridgeFrameCounter = 0;
+		if (bridge.isConnected()) {
+			ofJson status;
+			status["enabled"] = waterSim.isEnabled();
+			bridge.send("water_status", status);
+		}
+	}
 
 	// Theme display timer
 	if (themeDisplayTimer > 0)
@@ -342,6 +375,16 @@ void ofApp::keyPressed(int key)
 		// Original debug test (moved from 'w')
 		mapGameController.setDebug(kinectProjector->getDumpDebugFiles());
 		mapGameController.DebugTestMe();
+	}
+	else if (key == 'b')
+	{
+		// Send a ping to the Python bridge
+		if (bridge.isConnected()) {
+			bridge.send("ping");
+			ofLogNotice("Bridge") << "Ping sent";
+		} else {
+			ofLogNotice("Bridge") << "Not connected";
+		}
 	}
 }
 
