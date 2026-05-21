@@ -1,0 +1,96 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+env:
+  OF_VERSION: "0.12.0"
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout DuneBox
+        uses: actions/checkout@v4
+        with:
+          path: project
+
+      - name: Cache OpenFrameworks
+        id: cache-of
+        uses: actions/cache@v4
+        with:
+          path: openFrameworks
+          key: of-${{ env.OF_VERSION }}-win-vs
+
+      - name: Download OpenFrameworks
+        if: steps.cache-of.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          $url = "https://github.com/openframeworks/openFrameworks/releases/download/${{ env.OF_VERSION }}/of_v${{ env.OF_VERSION }}_vs_release.zip"
+          Invoke-WebRequest -Uri $url -OutFile of.zip -UseBasicParsing
+          Expand-Archive -Path of.zip -DestinationPath of_temp
+          $dir = Get-ChildItem of_temp -Directory | Select-Object -First 1
+          Move-Item $dir.FullName openFrameworks
+          Remove-Item of_temp -Recurse -Force
+          Remove-Item of.zip
+
+      - name: Install addons
+        shell: bash
+        run: |
+          cd openFrameworks/addons
+          git clone --depth 1 https://github.com/kylemcdonald/ofxCv || true
+          git clone --depth 1 https://github.com/braitsch/ofxDatGui || true
+          git clone --depth 1 https://github.com/braitsch/ofxParagraph || true
+          git clone --depth 1 https://github.com/braitsch/ofxModal || true
+
+      - name: Place project in OF tree
+        shell: bash
+        run: |
+          mkdir -p openFrameworks/apps/myApps
+          cp -r project openFrameworks/apps/myApps/DuneBox
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build x64 Release
+        shell: cmd
+        run: |
+          cd openFrameworks\apps\myApps\DuneBox
+          msbuild Magic-Sand.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143 /m
+
+      - name: Package release
+        shell: powershell
+        run: |
+          $binDir = "openFrameworks\apps\myApps\DuneBox\bin"
+          
+          # Copy OF shared libs needed at runtime
+          $ofBinDir = "openFrameworks\libs\openFrameworksCompiled\lib\vs\x64\Release"
+          if (Test-Path $ofBinDir) {
+            Get-ChildItem "$ofBinDir\*.dll" | Copy-Item -Destination $binDir
+          }
+
+          # Copy addon DLLs (libusb for Kinect)
+          $kinectDlls = Get-ChildItem "openFrameworks\addons\ofxKinect" -Recurse -Filter "*.dll" | Where-Object { $_.FullName -like "*x64*" -or $_.FullName -like "*Win32*" }
+          foreach ($dll in $kinectDlls) {
+            Copy-Item $dll.FullName -Destination $binDir -ErrorAction SilentlyContinue
+          }
+
+          # Create zip
+          Compress-Archive -Path "$binDir\*" -DestinationPath "DuneBox-windows-x64.zip"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DuneBox-windows-x64
+          path: DuneBox-windows-x64.zip
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: DuneBox-windows-x64.zip
+          generate_release_notes: true

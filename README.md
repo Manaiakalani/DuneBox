@@ -28,18 +28,29 @@ A cross-platform augmented reality sandbox that projects real-time topographic m
 
 ## Quick Start
 
-```bash
-# 1. Install OpenFrameworks 0.9.8+ from openframeworks.cc
-# 2. Install addons:
-#    ofxKinect, ofxOpenCv, ofxXmlSettings, ofxCv, ofxDatGui, ofxParagraph, ofxModal
-
-# 3. Build
-# Windows: Open Magic-Sand.sln → Build x64 Release
-# macOS:   Open Magic-Sand.xcodeproj → Build
-# Linux:   make && make run
-
-# 4. Run and press 'w' to toggle water simulation
+### Windows (easiest — no build tools needed)
+```powershell
+# One-line setup (run as admin):
+Set-ExecutionPolicy Bypass -Scope Process -Force
+git clone https://github.com/Manaiakalani/DuneBox-docs.git
+cd DuneBox-docs\scripts; .\setup-windows.ps1
 ```
+This downloads the pre-built app, creates desktop shortcuts, and you're done.
+
+Or manually: clone this repo and double-click **`run.bat`** — it auto-downloads the latest release.
+
+### Build from source (if you want to modify the code)
+```bash
+# 1. Install OpenFrameworks 0.12.0 from openframeworks.cc
+# 2. Clone into openFrameworks/apps/myApps/DuneBox
+# 3. Install addons: ofxCv, ofxDatGui, ofxParagraph, ofxModal
+# 4. Build:
+#    Windows: Open Magic-Sand.sln → x64 Release → Build
+#    macOS:   Open Magic-Sand.xcodeproj → Build
+#    Linux:   make && make run
+```
+
+Press **`w`** to toggle water simulation. Works without a Kinect (test terrain fallback).
 
 ## Project Structure
 
