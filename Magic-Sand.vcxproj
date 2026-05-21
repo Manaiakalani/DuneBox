@@ -200,6 +200,10 @@
     <ClCompile Include="src\WaterSimulation\WaterSimulation.cpp" />
     <ClCompile Include="src\WaterSimulation\ComputeWaterSimulation.cpp" />
     <ClCompile Include="src\Bridge\Bridge.cpp" />
+    <ClCompile Include="src\Diagnostics.cpp" />
+    <ClCompile Include="src\SandSurfaceRenderer\ColorTheme.cpp" />
+    <ClCompile Include="src\KinectProjector\KinectV2Handler.cpp" />
+    <ClCompile Include="src\KinectProjector\AzureKinectHandler.cpp" />
     <ClCompile Include="..\..\..\addons\ofxCv\libs\CLD\src\ETF.cpp" />
     <ClCompile Include="..\..\..\addons\ofxCv\libs\CLD\src\fdog.cpp" />
     <ClCompile Include="..\..\..\addons\ofxCv\libs\ofxCv\src\Calibration.cpp" />
@@ -248,6 +252,10 @@
     <ClInclude Include="src\WaterSimulation\WaterSimulation.h" />
     <ClInclude Include="src\WaterSimulation\ComputeWaterSimulation.h" />
     <ClInclude Include="src\Bridge\Bridge.h" />
+    <ClInclude Include="src\Diagnostics.h" />
+    <ClInclude Include="src\SandSurfaceRenderer\ColorTheme.h" />
+    <ClInclude Include="src\KinectProjector\KinectV2Handler.h" />
+    <ClInclude Include="src\KinectProjector\AzureKinectHandler.h" />
     <ClInclude Include="src\Games\BoidGameController.h" />
     <ClInclude Include="src\Games\MapGameController.h" />
     <ClInclude Include="src\Games\ReferenceMapHandler.h" />

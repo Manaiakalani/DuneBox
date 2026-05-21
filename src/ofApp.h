@@ -36,7 +36,7 @@ class ofApp : public ofBaseApp {
 
 public:
 	void setup();
- 
+	~ofApp();
 	void update();
 
 	void draw();
