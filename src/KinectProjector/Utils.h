@@ -137,7 +137,7 @@ namespace ofxCSG
 		
 		if ( denom == 0 )
 		{
-			//TODO: what's the right thing to do here?
+			// Degenerate triangle (zero area) — return false with zeroed coords
 			u = v = w = 0;
 			return false;
 		}

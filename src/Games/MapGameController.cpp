@@ -753,8 +753,10 @@ void CMapGameController::setDebug(bool flag)
 	if (flag)
 	{
 		std::string BaseDir = "data//mapGame//DebugFiles//";
-        // TODO: Find a way to create folder both on Win/Mac
-        //		mkdir(BaseDir.c_str());
+		ofDirectory dir(BaseDir);
+		if (!dir.exists()) {
+			dir.create(true);
+		}
 
 		// By default the application looks in data
 		debugBaseDir = "mapGame//DebugFiles//";
