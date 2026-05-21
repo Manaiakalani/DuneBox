@@ -84,7 +84,7 @@ int main() {
 		mainWindow = nullptr;
 	}
 
-	if (!mainWindow || !mainWindow->getWindowSize().x) {
+	if (!mainWindow || mainWindow->getWindowSize().x == 0) {
 		// GL 4.3 failed — fall back to GL 3.2
 		ofLogNotice("main") << "GL 4.3 not available, falling back to GL 3.2";
 		useGL43 = false;
