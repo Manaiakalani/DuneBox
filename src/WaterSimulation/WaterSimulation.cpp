@@ -20,6 +20,7 @@ This file is part of DuneBox, a fork of Magic Sand.
 ***********************************************************************/
 
 #include "WaterSimulation.h"
+#include "ofXml.h"
 
 static const string SHADER_PATH = "shaders/water/adapted/";
 
@@ -241,6 +242,8 @@ void WaterSimulation::setup(int width, int height) {
 
     ofLogNotice("WaterSimulation") << "Setup complete. FBOs: "
         << simWidth << "x" << simHeight << " RGBA32F";
+
+    loadSettings();
 }
 
 // ─── Fullscreen quad helper ─────────────────────────────────────────
@@ -519,6 +522,50 @@ ofTexture& WaterSimulation::getQuantityTexture() {
 
 ofTexture& WaterSimulation::getBathymetryTexture() {
     return bathymetryFbo[currentBathymetry].getTexture();
+}
+
+// ─── Settings persistence ───────────────────────────────────────────
+
+void WaterSimulation::loadSettings(const std::string& path) {
+    ofXml xml;
+    if (!xml.load(path)) {
+        ofLogNotice("WaterSimulation") << "No settings file at " << path << ", using defaults";
+        return;
+    }
+    xml.setTo("WATERSIMULATION");
+    gravity        = xml.getValue<float>("gravity");
+    attenuation    = xml.getValue<float>("attenuation");
+    theta          = xml.getValue<float>("theta");
+    epsilon        = xml.getValue<float>("epsilon");
+    cellSize       = xml.getValue<float>("cellSize");
+    waterOpacity   = xml.getValue<float>("waterOpacity");
+    fixedDt        = xml.getValue<float>("fixedDt");
+    maxStepsPerFrame = xml.getValue<int>("maxStepsPerFrame");
+    enabled        = xml.getValue<bool>("enabled");
+
+    ofLogNotice("WaterSimulation") << "Settings loaded from " << path;
+}
+
+void WaterSimulation::saveSettings(const std::string& path) {
+    ofXml xml;
+    xml.addChild("WATERSIMULATION");
+    xml.setTo("WATERSIMULATION");
+    xml.addValue("gravity", gravity);
+    xml.addValue("attenuation", attenuation);
+    xml.addValue("theta", theta);
+    xml.addValue("epsilon", epsilon);
+    xml.addValue("cellSize", cellSize);
+    xml.addValue("waterOpacity", waterOpacity);
+    xml.addValue("fixedDt", fixedDt);
+    xml.addValue("maxStepsPerFrame", maxStepsPerFrame);
+    xml.addValue("enabled", enabled);
+    xml.setToParent();
+
+    if (xml.save(path)) {
+        ofLogNotice("WaterSimulation") << "Settings saved to " << path;
+    } else {
+        ofLogError("WaterSimulation") << "Failed to save settings to " << path;
+    }
 }
 
 void WaterSimulation::setGravity(float g) { gravity = g; }
