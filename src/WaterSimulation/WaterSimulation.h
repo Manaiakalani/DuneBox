@@ -76,6 +76,9 @@ public:
     void setEnabled(bool enabled);
     bool isEnabled() const { return enabled; }
 
+    void loadSettings(const std::string& path = "settings/waterSettings.xml");
+    void saveSettings(const std::string& path = "settings/waterSettings.xml");
+
     int getSimWidth() const { return simWidth; }
     int getSimHeight() const { return simHeight; }
 
