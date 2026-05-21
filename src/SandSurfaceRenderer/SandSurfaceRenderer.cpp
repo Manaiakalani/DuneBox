@@ -144,6 +144,11 @@ void SandSurfaceRenderer::setup(bool sdisplayGui){
     if (displayGui)
         setupGui();
     
+    // Day/night cycle
+    timeOfDay = 0.5f;       // start at noon
+    dayNightCycleSpeed = 120.0f;
+    dayNightEnabled = false;
+
     // Setup range, base plane and conversion matrices
     updateConversionMatrices();
     updateRangesAndBasePlane();
@@ -219,6 +224,13 @@ void SandSurfaceRenderer::update(){
         updateRangesAndBasePlane();
     if (kinectProjector->isCalibrationUpdated())
         updateConversionMatrices();
+
+    // Day/night cycle
+    if (dayNightEnabled) {
+        float dt = ofGetLastFrameTime();
+        timeOfDay += dt / dayNightCycleSpeed;
+        if (timeOfDay >= 1.0f) timeOfDay -= 1.0f;
+    }
     
     // Draw sandbox
     if (drawContourLines)
@@ -268,6 +280,8 @@ void SandSurfaceRenderer::drawSandbox() {
     heightMapShader.setUniformTexture("pixelCornerElevationSampler", contourLineFramebufferObject.getTexture(), 3);
     heightMapShader.setUniform1f("contourLineFactor", contourLineFactor);
     heightMapShader.setUniform1i("drawContourLines", drawContourLines);
+    heightMapShader.setUniform1f("timeOfDay", timeOfDay);
+    heightMapShader.setUniform1i("dayNightEnabled", dayNightEnabled ? 1 : 0);
     mesh.draw();
     heightMapShader.end();
     kinectProjector->unbind();
@@ -549,6 +563,19 @@ std::string SandSurfaceRenderer::getThemeName() const {
 
 int SandSurfaceRenderer::getThemeIndex() const {
     return themeManager.getCurrentIndex();
+}
+
+void SandSurfaceRenderer::toggleDayNight() {
+    dayNightEnabled = !dayNightEnabled;
+    ofLogNotice("SandSurfaceRenderer") << "Day/night cycle: " << (dayNightEnabled ? "ON" : "OFF");
+}
+
+bool SandSurfaceRenderer::isDayNightEnabled() const {
+    return dayNightEnabled;
+}
+
+float SandSurfaceRenderer::getTimeOfDay() const {
+    return timeOfDay;
 }
 
 
