@@ -87,9 +87,15 @@ The water simulation uses GLSL shaders extracted from [SARndbox](https://github.
 
 | Key | Action |
 |---|---|
-| `w` | Toggle water simulation |
-| `c` | Start calibration |
-| `space` | Pause/resume |
+| `w` | Toggle water simulation on/off |
+| `space` | Start map game (if idle) / advance game step / start app from setup |
+| `f` or `r` | Start fish game (boid mode 2) / end map game |
+| `1`–`4` | Start boid game at difficulty 0–3 |
+| `m` | Start "seek mother" game |
+| `c` | Save Kinect color image to disk |
+| `d` | Save filtered depth image to disk |
+| `t` | Run real-time test |
+| `W` | Run debug test |
 
 ## See Also
 
