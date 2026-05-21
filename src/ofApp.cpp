@@ -388,6 +388,11 @@ void ofApp::keyPressed(int key)
 			ofLogNotice("Bridge") << "Not connected";
 		}
 	}
+	else if (key == 'n')
+	{
+		// Toggle day/night cycle
+		sandSurfaceRenderer->toggleDayNight();
+	}
 	else if (key == 'l')
 	{
 		// Toggle lava simulation mode

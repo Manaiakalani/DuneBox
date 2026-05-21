@@ -32,6 +32,26 @@ uniform sampler2DRect heightColorMapSampler;
 uniform sampler2DRect pixelCornerElevationSampler; // Sampler for the half pixel texture
 uniform float contourLineFactor;
 uniform int drawContourLines;
+uniform float timeOfDay;
+uniform int dayNightEnabled;
+
+// Compute day/night tint from timeOfDay (0=midnight, 0.5=noon)
+vec3 getDayNightTint() {
+    // Phase boundaries matching Python: night 0-0.2, dawn 0.2-0.3, day 0.3-0.7, dusk 0.7-0.8, night 0.8-1.0
+    vec3 nightTint = vec3(0.3, 0.3, 0.5);
+    vec3 dawnTint  = vec3(0.9, 0.7, 0.5);
+    vec3 dayTint   = vec3(1.0, 1.0, 1.0);
+    vec3 duskTint  = vec3(0.8, 0.6, 0.7);
+
+    float t = timeOfDay;
+    if (t < 0.2) return nightTint;
+    if (t < 0.3) return mix(nightTint, dawnTint, (t - 0.2) / 0.1);
+    if (t < 0.5) return mix(dawnTint, dayTint, (t - 0.3) / 0.2);
+    if (t < 0.7) return dayTint;
+    if (t < 0.8) return mix(dayTint, duskTint, (t - 0.7) / 0.1);
+    if (t < 0.9) return mix(duskTint, nightTint, (t - 0.8) / 0.1);
+    return nightTint;
+}
 
 void main()
 {
@@ -80,4 +100,10 @@ void main()
     }
 
     outputColor = color;
+
+    // Apply day/night tint
+    if (dayNightEnabled == 1) {
+        vec3 tint = getDayNightTint();
+        outputColor.rgb *= tint;
+    }
 }
