@@ -122,13 +122,18 @@ The water simulation uses GLSL shaders extracted from [SARndbox](https://github.
 | Key | Action |
 |---|---|
 | `w` | Toggle water simulation on/off |
+| `l` | Toggle lava simulation (auto-switches to Volcanic theme) |
+| `t` | Cycle color themes (Topo → Ocean → Volcanic → Ice Age → Alien) |
+| `n` | Toggle day/night cycle |
+| `v` | Trigger volcano eruption at center |
+| `b` | Send ping to Python bridge |
 | `space` | Start map game (if idle) / advance game step / start app from setup |
 | `f` or `r` | Start fish game (boid mode 2) / end map game |
 | `1`–`4` | Start boid game at difficulty 0–3 |
 | `m` | Start "seek mother" game |
 | `c` | Save Kinect color image to disk |
 | `d` | Save filtered depth image to disk |
-| `t` | Run real-time test |
+| `T` | Run real-time test (debug) |
 | `W` | Run debug test |
 
 ## See Also
