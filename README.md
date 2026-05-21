@@ -21,10 +21,44 @@ A cross-platform augmented reality sandbox that projects real-time topographic m
 
 | Component | Recommendation |
 |---|---|
-| **Kinect** | Kinect v1 (Xbox 360) — best supported |
+| **Depth Sensor** | Kinect v1 (default), Kinect v2, Azure Kinect, or Orbbec Femto Bolt |
 | **Projector** | Short-throw, 4:3 aspect, HDMI output |
 | **PC** | x86 quad-core + Nvidia GPU for water sim (Quadro P620 minimum) |
 | **Sandbox** | 40"×30" plywood box (4:3 ratio), Sandtastik White Play Sand |
+
+## Supported Sensors
+
+| Sensor | `kinectVersion` | Addon Required | Depth Resolution | Compile Flag |
+|---|---|---|---|---|
+| Kinect v1 (Xbox 360) | `1` (default) | ofxKinect (built-in) | 640×480 | — |
+| Kinect v2 (Xbox One) | `2` | ofxKinectV2 + libfreenect2 | 512×424 | `DUNEBOX_USE_KINECT_V2` |
+| Azure Kinect DK | `3` | ofxAzureKinect + Azure Kinect SDK | 640×576 | `DUNEBOX_USE_AZURE_KINECT` |
+| Orbbec Femto Bolt | `3` | ofxAzureKinect + Azure Kinect SDK | 640×576 | `DUNEBOX_USE_AZURE_KINECT` |
+
+### Switching sensors
+
+Edit `bin/data/settings/kinectProjectorSettings.xml` and add/change:
+```xml
+<kinectVersion>2</kinectVersion>
+```
+
+Values: `1` = Kinect V1, `2` = Kinect V2, `3` = Azure Kinect / Orbbec Femto Bolt.
+
+### Building with Kinect V2 support
+1. Install [libfreenect2](https://github.com/OpenKinect/libfreenect2)
+2. Clone [ofxKinectV2](https://github.com/ofTheo/ofxKinectV2) into `openFrameworks/addons/`
+3. Add `ofxKinectV2` to `addons.make`
+4. Add `-DDUNEBOX_USE_KINECT_V2` to compiler flags
+5. Rebuild
+
+### Building with Azure Kinect / Orbbec Femto Bolt support
+1. Install [Azure Kinect SDK v1.4+](https://learn.microsoft.com/azure/kinect-dk/sensor-sdk-download)
+2. Clone [ofxAzureKinect](https://github.com/prisonerjohn/ofxAzureKinect) into `openFrameworks/addons/`
+3. Add `ofxAzureKinect` to `addons.make`
+4. Add `-DDUNEBOX_USE_AZURE_KINECT` to compiler flags
+5. Rebuild
+
+> **Note:** The Orbbec Femto Bolt uses Azure Kinect-compatible firmware and works with the same SDK/addon.
 
 ## Quick Start
 
