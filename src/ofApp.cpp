@@ -132,6 +132,25 @@ void ofApp::update() {
 			}
 		} else if (type == "pong") {
 			ofLogVerbose("Bridge") << "Pong received";
+		} else if (type == "volcano_eruption") {
+			// Eruption from Python side: enable lava and add lava source
+			float vx = msg.value("x", 0.5f);
+			float vy = msg.value("y", 0.5f);
+			if (!waterSimIsLavaMode()) {
+				preLavaThemeIndex = sandSurfaceRenderer->getThemeIndex();
+				sandSurfaceRenderer->setTheme(2); // Volcanic
+				themeDisplayName = "Volcanic (Eruption!)";
+				themeDisplayTimer = 3.0f;
+				if (!waterSimIsEnabled()) waterSimToggleEnabled();
+				waterSimSetLavaMode(true);
+			}
+			float simX = vx * waterSimGetSimWidth();
+			float simY = vy * waterSimGetSimHeight();
+			volcanoEruptionActive = true;
+			volcanoEruptionTimer = 3.0f;
+			volcanoSourceX = simX;
+			volcanoSourceY = simY;
+			ofLogNotice("Bridge") << "Volcano eruption at (" << vx << ", " << vy << ")";
 		}
 	}
 
@@ -149,6 +168,16 @@ void ofApp::update() {
 	// Theme display timer
 	if (themeDisplayTimer > 0)
 		themeDisplayTimer -= ofGetLastFrameTime();
+
+	// Volcano eruption: inject lava source over several frames
+	if (volcanoEruptionActive) {
+		volcanoEruptionTimer -= ofGetLastFrameTime();
+		if (volcanoEruptionTimer > 0) {
+			waterSimAddWater(volcanoSourceX, volcanoSourceY, 20.0f, 0.5f);
+		} else {
+			volcanoEruptionActive = false;
+		}
+	}
 
 	// --- Water simulation update ---
 	if (waterSimIsEnabled()) {
@@ -415,6 +444,25 @@ void ofApp::keyPressed(int key)
 		}
 		waterSimSetLavaMode(newLavaState);
 		ofLogNotice("ofApp") << "Lava mode: " << (newLavaState ? "ON" : "OFF");
+	}
+	else if (key == 'v')
+	{
+		// Manual volcano eruption at center of sandbox
+		if (!waterSimIsLavaMode()) {
+			preLavaThemeIndex = sandSurfaceRenderer->getThemeIndex();
+			sandSurfaceRenderer->setTheme(2); // Volcanic
+			themeDisplayName = "Volcanic (Eruption!)";
+			themeDisplayTimer = 3.0f;
+			if (!waterSimIsEnabled()) waterSimToggleEnabled();
+			waterSimSetLavaMode(true);
+		}
+		float cx = waterSimGetSimWidth() * 0.5f;
+		float cy = waterSimGetSimHeight() * 0.5f;
+		volcanoEruptionActive = true;
+		volcanoEruptionTimer = 3.0f;
+		volcanoSourceX = cx;
+		volcanoSourceY = cy;
+		ofLogNotice("ofApp") << "Volcano eruption triggered at center";
 	}
 }
 
