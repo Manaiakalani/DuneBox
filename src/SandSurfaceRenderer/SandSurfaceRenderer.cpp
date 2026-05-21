@@ -29,7 +29,11 @@ using namespace ofxCSG;
 
 SandSurfaceRenderer::SandSurfaceRenderer(std::shared_ptr<KinectProjector> const& k, std::shared_ptr<ofAppBaseWindow> const& p)
 :settingsLoaded(false),
-editColorMap(false){
+editColorMap(false),
+gui(nullptr),
+gui2(nullptr),
+gui3(nullptr),
+colorList(nullptr){
     kinectProjector = k;
     projWindow = p;
 }
@@ -503,6 +507,47 @@ void SandSurfaceRenderer::onSaveModalEvent(ofxModalEvent e){
 }
 
 
+// ─── Color Theme (biome mode) ────────────────────────────────────────
+
+void SandSurfaceRenderer::applyThemeToHeightMap() {
+    const ColorTheme& theme = themeManager.getCurrentTheme();
+    heightMap.applyKeys(theme.elevationKeys);
+
+    // Recalculate scale/offset for the new elevation range
+    elevationMin = -heightMap.getScalarRangeMin();
+    elevationMax = -heightMap.getScalarRangeMax();
+    heightMapScale = (heightMap.getNumEntries() - 1) / (elevationMax - elevationMin);
+    heightMapOffset = 0.5f / heightMap.getNumEntries() - heightMapScale * elevationMin;
+    contourLineFboScale = elevationMin - elevationMax;
+    contourLineFboOffset = elevationMax;
+    contourLineFactor = contourLineFboScale / contourLineDistance;
+
+    if (kinectProjector)
+        kinectProjector->updateNativeScale(basePlaneOffset.z + elevationMax,
+                                           basePlaneOffset.z + elevationMin);
+
+    // Refresh the GUI color list if it exists
+    if (displayGui && gui3)
+        populateColorList();
+}
+
+void SandSurfaceRenderer::setTheme(int index) {
+    themeManager.setTheme(index);
+    applyThemeToHeightMap();
+    ofLogNotice("SandSurfaceRenderer") << "Theme set to: " << themeManager.getCurrentTheme().name;
+}
+
+void SandSurfaceRenderer::cycleTheme() {
+    themeManager.cycleTheme();
+    applyThemeToHeightMap();
+    ofLogNotice("SandSurfaceRenderer") << "Theme cycled to: " << themeManager.getCurrentTheme().name;
+}
+
+std::string SandSurfaceRenderer::getThemeName() const {
+    return themeManager.getCurrentTheme().name;
+}
+
+
 // Note: loadSettings/saveSettings currently persist colorMapFile, drawContourLines,
 // and contourLineDistance. Additional renderer settings could be added here if needed.
 
@@ -516,7 +561,11 @@ bool SandSurfaceRenderer::loadSettings(){
     colorMapFile = xml.getValue<string>("colorMapFile");
     drawContourLines = xml.getValue<bool>("drawContourLines");
     contourLineDistance = xml.getValue<float>("contourLineDistance");
-    
+
+    // Theme index (defaults to 0 = Topo if not present)
+    int themeIdx = xml.getValue<int>("colorThemeIndex", 0);
+    themeManager.setTheme(themeIdx);
+
     return true;
 }
 
@@ -529,6 +578,7 @@ bool SandSurfaceRenderer::saveSettings(){
     xml.addValue("colorMapFile", colorMapFile);
     xml.addValue("drawContourLines", drawContourLines);
     xml.addValue("contourLineDistance", contourLineDistance);
+    xml.addValue("colorThemeIndex", themeManager.getCurrentIndex());
     xml.setToParent();
     return xml.save(settingsFile);
 }

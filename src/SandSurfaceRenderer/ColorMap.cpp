@@ -230,3 +230,13 @@ bool ColorMap::createFile(string filename) {
     
     return updateColormap();
 }
+
+bool ColorMap::applyKeys(const std::vector<HeightMapKey>& keys) {
+    if (keys.empty())
+        return false;
+    heightMapKeys = keys;
+    std::sort(heightMapKeys.begin(), heightMapKeys.end());
+    min = heightMapKeys.front().height;
+    max = heightMapKeys.back().height;
+    return updateColormap();
+}
