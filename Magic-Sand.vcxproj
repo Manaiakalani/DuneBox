@@ -198,6 +198,7 @@
     <ClCompile Include="src\SandSurfaceRenderer\ColorMap.cpp" />
     <ClCompile Include="src\SandSurfaceRenderer\SandSurfaceRenderer.cpp" />
     <ClCompile Include="src\WaterSimulation\WaterSimulation.cpp" />
+    <ClCompile Include="src\Bridge\Bridge.cpp" />
     <ClCompile Include="..\..\..\addons\ofxCv\libs\CLD\src\ETF.cpp" />
     <ClCompile Include="..\..\..\addons\ofxCv\libs\CLD\src\fdog.cpp" />
     <ClCompile Include="..\..\..\addons\ofxCv\libs\ofxCv\src\Calibration.cpp" />
@@ -244,6 +245,7 @@
   <ItemGroup>
     <ClInclude Include="src\ofApp.h" />
     <ClInclude Include="src\WaterSimulation\WaterSimulation.h" />
+    <ClInclude Include="src\Bridge\Bridge.h" />
     <ClInclude Include="src\Games\BoidGameController.h" />
     <ClInclude Include="src\Games\MapGameController.h" />
     <ClInclude Include="src\Games\ReferenceMapHandler.h" />

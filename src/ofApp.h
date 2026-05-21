@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "Games/BoidGameController.h"
 #include "WaterSimulation/WaterSimulation.h"
 #include "Diagnostics.h"
+#include "Bridge/Bridge.h"
 
 class ofApp : public ofBaseApp {
 
@@ -73,6 +74,10 @@ private:
 	// Theme display overlay
 	std::string themeDisplayName;
 	float themeDisplayTimer;
+
+	// Inter-app bridge (Python ↔ C++)
+	Bridge bridge;
+	int bridgeFrameCounter = 0;
 
 	// Startup diagnostics
 	Diagnostics diagnostics;
