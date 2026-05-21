@@ -378,6 +378,8 @@ void ofApp::detectRainGesture() {
 
 	ofVec2f kinectRes = kinectProjector->getKinectRes();
 	ofRectangle roi = kinectProjector->getKinectROI();
+	if (roi.width <= 0 || roi.height <= 0) return;
+
 	int startX = (int)roi.x;
 	int startY = (int)roi.y;
 	int endX = (int)(roi.x + roi.width);
