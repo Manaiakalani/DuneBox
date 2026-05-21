@@ -503,7 +503,8 @@ void SandSurfaceRenderer::onSaveModalEvent(ofxModalEvent e){
 }
 
 
-//TODO: Save additionnal settings
+// Note: loadSettings/saveSettings currently persist colorMapFile, drawContourLines,
+// and contourLineDistance. Additional renderer settings could be added here if needed.
 
 bool SandSurfaceRenderer::loadSettings(){
     string settingsFile = "settings/sandSurfaceRendererSettings.xml";
