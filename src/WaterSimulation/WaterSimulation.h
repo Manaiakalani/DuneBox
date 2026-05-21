@@ -124,7 +124,8 @@ private:
     // --- Fullscreen quad mesh ---
     ofVboMesh quadMesh;
 
-    // --- Pending water additions (from addWater() calls) ---
+    // --- Cached boundary edge meshes (built once in setup, drawn every frame) ---
+    ofVboMesh boundaryEdges[4]; // bottom, top, left, right
     struct WaterAddition {
         float x, y, radius, amount;
     };

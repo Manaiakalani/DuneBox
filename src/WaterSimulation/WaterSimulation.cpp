@@ -180,6 +180,60 @@ void WaterSimulation::setup(int width, int height) {
     quadMesh.addVertex(ofVec3f(1, 1, 0));
     quadMesh.addTexCoord(ofVec2f(1, 1));
 
+    // --- Build cached boundary edge meshes (4 edges, drawn every frame) ---
+    float hpw = 0.5f / simWidth;
+    float hph = 0.5f / simHeight;
+    float pw = 1.0f / simWidth;
+    float ph = 1.0f / simHeight;
+
+    // Bottom edge (row 0)
+    boundaryEdges[0].clear();
+    boundaryEdges[0].setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
+    boundaryEdges[0].addVertex(ofVec3f(-1.0, -1.0, 0));
+    boundaryEdges[0].addTexCoord(ofVec2f(hpw, hph));
+    boundaryEdges[0].addVertex(ofVec3f(1.0, -1.0, 0));
+    boundaryEdges[0].addTexCoord(ofVec2f(1.0 - hpw, hph));
+    boundaryEdges[0].addVertex(ofVec3f(-1.0, -1.0 + 2.0 * ph, 0));
+    boundaryEdges[0].addTexCoord(ofVec2f(hpw, hph));
+    boundaryEdges[0].addVertex(ofVec3f(1.0, -1.0 + 2.0 * ph, 0));
+    boundaryEdges[0].addTexCoord(ofVec2f(1.0 - hpw, hph));
+
+    // Top edge (row simHeight-1)
+    boundaryEdges[1].clear();
+    boundaryEdges[1].setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
+    boundaryEdges[1].addVertex(ofVec3f(-1.0, 1.0 - 2.0 * ph, 0));
+    boundaryEdges[1].addTexCoord(ofVec2f(hpw, 1.0 - hph));
+    boundaryEdges[1].addVertex(ofVec3f(1.0, 1.0 - 2.0 * ph, 0));
+    boundaryEdges[1].addTexCoord(ofVec2f(1.0 - hpw, 1.0 - hph));
+    boundaryEdges[1].addVertex(ofVec3f(-1.0, 1.0, 0));
+    boundaryEdges[1].addTexCoord(ofVec2f(hpw, 1.0 - hph));
+    boundaryEdges[1].addVertex(ofVec3f(1.0, 1.0, 0));
+    boundaryEdges[1].addTexCoord(ofVec2f(1.0 - hpw, 1.0 - hph));
+
+    // Left edge (column 0)
+    boundaryEdges[2].clear();
+    boundaryEdges[2].setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
+    boundaryEdges[2].addVertex(ofVec3f(-1.0, -1.0, 0));
+    boundaryEdges[2].addTexCoord(ofVec2f(hpw, hph));
+    boundaryEdges[2].addVertex(ofVec3f(-1.0 + 2.0 * pw, -1.0, 0));
+    boundaryEdges[2].addTexCoord(ofVec2f(hpw, hph));
+    boundaryEdges[2].addVertex(ofVec3f(-1.0, 1.0, 0));
+    boundaryEdges[2].addTexCoord(ofVec2f(hpw, 1.0 - hph));
+    boundaryEdges[2].addVertex(ofVec3f(-1.0 + 2.0 * pw, 1.0, 0));
+    boundaryEdges[2].addTexCoord(ofVec2f(hpw, 1.0 - hph));
+
+    // Right edge (column simWidth-1)
+    boundaryEdges[3].clear();
+    boundaryEdges[3].setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
+    boundaryEdges[3].addVertex(ofVec3f(1.0 - 2.0 * pw, -1.0, 0));
+    boundaryEdges[3].addTexCoord(ofVec2f(1.0 - hpw, hph));
+    boundaryEdges[3].addVertex(ofVec3f(1.0, -1.0, 0));
+    boundaryEdges[3].addTexCoord(ofVec2f(1.0 - hpw, hph));
+    boundaryEdges[3].addVertex(ofVec3f(1.0 - 2.0 * pw, 1.0, 0));
+    boundaryEdges[3].addTexCoord(ofVec2f(1.0 - hpw, 1.0 - hph));
+    boundaryEdges[3].addVertex(ofVec3f(1.0, 1.0, 0));
+    boundaryEdges[3].addTexCoord(ofVec2f(1.0 - hpw, 1.0 - hph));
+
     currentQuantity = 0;
     currentBathymetry = 0;
     bathymetryDirty = true;
@@ -354,8 +408,6 @@ void WaterSimulation::rungeKuttaStep(int srcIndex, int starIndex, float stepSize
 }
 
 void WaterSimulation::applyBoundary(int targetIndex) {
-    // Render boundary conditions as edge lines into the quantity FBO.
-    // We draw 4 edge strips (1 pixel wide) to set edges to dry state.
     quantityFbo[targetIndex].begin();
 
     boundaryShader.begin();
@@ -363,63 +415,9 @@ void WaterSimulation::applyBoundary(int targetIndex) {
         bathymetryFbo[currentBathymetry].getTexture(), 0);
     boundaryShader.setUniform2f("texelSize", 1.0f / simWidth, 1.0f / simHeight);
 
-    // Draw boundary edge strips. In normalized texcoords, pixel (i,j) center
-    // is at ((i+0.5)/W, (j+0.5)/H). We draw 1-pixel-wide quads along each
-    // domain edge so the boundary shader sets those cells to dry state.
-
-    float hpw = 0.5f / simWidth;   // half-pixel in normalized texcoord
-    float hph = 0.5f / simHeight;
-    float pw = 1.0f / simWidth;
-    float ph = 1.0f / simHeight;
-
-    // Bottom edge (row 0): texcoord y center = hph
-    ofMesh edge;
-    edge.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
-    edge.addVertex(ofVec3f(-1.0, -1.0, 0));
-    edge.addTexCoord(ofVec2f(hpw, hph));
-    edge.addVertex(ofVec3f(1.0, -1.0, 0));
-    edge.addTexCoord(ofVec2f(1.0 - hpw, hph));
-    edge.addVertex(ofVec3f(-1.0, -1.0 + 2.0 * ph, 0));
-    edge.addTexCoord(ofVec2f(hpw, hph));
-    edge.addVertex(ofVec3f(1.0, -1.0 + 2.0 * ph, 0));
-    edge.addTexCoord(ofVec2f(1.0 - hpw, hph));
-    edge.draw();
-    edge.clear();
-
-    // Top edge (row simHeight-1): texcoord y center = 1.0 - hph
-    edge.addVertex(ofVec3f(-1.0, 1.0 - 2.0 * ph, 0));
-    edge.addTexCoord(ofVec2f(hpw, 1.0 - hph));
-    edge.addVertex(ofVec3f(1.0, 1.0 - 2.0 * ph, 0));
-    edge.addTexCoord(ofVec2f(1.0 - hpw, 1.0 - hph));
-    edge.addVertex(ofVec3f(-1.0, 1.0, 0));
-    edge.addTexCoord(ofVec2f(hpw, 1.0 - hph));
-    edge.addVertex(ofVec3f(1.0, 1.0, 0));
-    edge.addTexCoord(ofVec2f(1.0 - hpw, 1.0 - hph));
-    edge.draw();
-    edge.clear();
-
-    // Left edge (column 0): texcoord x center = hpw
-    edge.addVertex(ofVec3f(-1.0, -1.0, 0));
-    edge.addTexCoord(ofVec2f(hpw, hph));
-    edge.addVertex(ofVec3f(-1.0 + 2.0 * pw, -1.0, 0));
-    edge.addTexCoord(ofVec2f(hpw, hph));
-    edge.addVertex(ofVec3f(-1.0, 1.0, 0));
-    edge.addTexCoord(ofVec2f(hpw, 1.0 - hph));
-    edge.addVertex(ofVec3f(-1.0 + 2.0 * pw, 1.0, 0));
-    edge.addTexCoord(ofVec2f(hpw, 1.0 - hph));
-    edge.draw();
-    edge.clear();
-
-    // Right edge (column simWidth-1): texcoord x center = 1.0 - hpw
-    edge.addVertex(ofVec3f(1.0 - 2.0 * pw, -1.0, 0));
-    edge.addTexCoord(ofVec2f(1.0 - hpw, hph));
-    edge.addVertex(ofVec3f(1.0, -1.0, 0));
-    edge.addTexCoord(ofVec2f(1.0 - hpw, hph));
-    edge.addVertex(ofVec3f(1.0 - 2.0 * pw, 1.0, 0));
-    edge.addTexCoord(ofVec2f(1.0 - hpw, 1.0 - hph));
-    edge.addVertex(ofVec3f(1.0, 1.0, 0));
-    edge.addTexCoord(ofVec2f(1.0 - hpw, 1.0 - hph));
-    edge.draw();
+    for (int i = 0; i < 4; i++) {
+        boundaryEdges[i].draw();
+    }
 
     boundaryShader.end();
     quantityFbo[targetIndex].end();

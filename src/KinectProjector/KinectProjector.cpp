@@ -542,7 +542,7 @@ void KinectProjector::updateROIFromCalibration()
 	setNewKinectROI();
 }
 
-//TODO: update color image ROI acquisition to use calibration modal
+// Future: use calibration modal for color image ROI acquisition
 void KinectProjector::updateROIFromColorImage()
 {
     fboProjWindow.begin();
@@ -1064,7 +1064,7 @@ void KinectProjector::CalibrateNextPoint()
 	}
 }
 
-//TODO: Add manual Prj Kinect calibration
+// Future: manual projector-Kinect calibration with interactive chessboard
 void KinectProjector::updateProjKinectManualCalibration(){
     // Draw a Chessboard
     drawChessboard(ofGetMouseX(), ofGetMouseY(), chessboardSize);
