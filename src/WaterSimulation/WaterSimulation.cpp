@@ -40,6 +40,9 @@ WaterSimulation::WaterSimulation()
     , maxStepsPerFrame(5)
     , enabled(false)
     , initialized(false)
+    , lavaActive(false)
+    , baseAttenuation(0.99f)
+    , baseWaterOpacity(5.0f)
     , simWidth(0)
     , simHeight(0)
 {
@@ -306,6 +309,7 @@ void WaterSimulation::update(ofTexture& depthTexture, float dt) {
     waterRenderShader.setUniform2f("texelSize", 1.0f / simWidth, 1.0f / simHeight);
     waterRenderShader.setUniform1f("waterOpacity", waterOpacity);
     waterRenderShader.setUniform1f("time", ofGetElapsedTimef());
+    waterRenderShader.setUniform1i("uLavaMode", lavaActive ? 1 : 0);
     drawFullscreenQuad();
     waterRenderShader.end();
 
@@ -543,6 +547,11 @@ void WaterSimulation::loadSettings(const std::string& path) {
     maxStepsPerFrame = xml.getValue<int>("maxStepsPerFrame");
     enabled        = xml.getValue<bool>("enabled");
 
+    bool savedLavaMode = xml.getValue<bool>("lavaMode");
+    if (savedLavaMode != lavaActive) {
+        setLavaMode(savedLavaMode);
+    }
+
     ofLogNotice("WaterSimulation") << "Settings loaded from " << path;
 }
 
@@ -559,6 +568,7 @@ void WaterSimulation::saveSettings(const std::string& path) {
     xml.addValue("fixedDt", fixedDt);
     xml.addValue("maxStepsPerFrame", maxStepsPerFrame);
     xml.addValue("enabled", enabled);
+    xml.addValue("lavaMode", lavaActive);
     xml.setToParent();
 
     if (xml.save(path)) {
@@ -576,3 +586,22 @@ void WaterSimulation::setCellSize(float cs) { cellSize = cs; }
 void WaterSimulation::setWaterOpacity(float opacity) { waterOpacity = opacity; }
 void WaterSimulation::setMaxStepsPerFrame(int steps) { maxStepsPerFrame = steps; }
 void WaterSimulation::setEnabled(bool e) { enabled = e; }
+
+void WaterSimulation::setLavaMode(bool enabled) {
+    if (enabled == lavaActive) return;
+
+    if (enabled) {
+        // Save current water parameters before overriding
+        baseAttenuation = attenuation;
+        baseWaterOpacity = waterOpacity;
+        // Lava: viscous flow, more opaque
+        attenuation = 0.85f;
+        waterOpacity = 8.0f;
+    } else {
+        // Restore water parameters
+        attenuation = baseAttenuation;
+        waterOpacity = baseWaterOpacity;
+    }
+    lavaActive = enabled;
+    ofLogNotice("WaterSimulation") << "Lava mode: " << (lavaActive ? "ON" : "OFF");
+}
