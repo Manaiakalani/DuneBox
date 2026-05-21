@@ -68,12 +68,25 @@ void WaterSimulation::setup(int width, int height) {
     waterRenderShader.load(SHADER_PATH + "WaterRender", SHADER_PATH + "WaterRender");
 
     // Verify all shaders loaded
-    if (!slopeFluxDerivShader.isLoaded()) {
-        ofLogError("WaterSimulation") << "Failed to load SlopeFluxDeriv shader";
-        return;
-    }
-    if (!eulerStepShader.isLoaded()) {
-        ofLogError("WaterSimulation") << "Failed to load EulerStep shader";
+    bool allLoaded = bathymetryUpdateShader.isLoaded()
+        && slopeFluxDerivShader.isLoaded()
+        && eulerStepShader.isLoaded()
+        && rungeKuttaStepShader.isLoaded()
+        && boundaryShader.isLoaded()
+        && waterAddShader.isLoaded()
+        && waterUpdateShader.isLoaded()
+        && waterRenderShader.isLoaded();
+
+    if (!allLoaded) {
+        ofLogError("WaterSimulation") << "One or more shaders failed to load — water simulation disabled";
+        if (!bathymetryUpdateShader.isLoaded()) ofLogError("WaterSimulation") << "  Missing: BathymetryUpdate";
+        if (!slopeFluxDerivShader.isLoaded())   ofLogError("WaterSimulation") << "  Missing: SlopeFluxDeriv";
+        if (!eulerStepShader.isLoaded())         ofLogError("WaterSimulation") << "  Missing: EulerStep";
+        if (!rungeKuttaStepShader.isLoaded())    ofLogError("WaterSimulation") << "  Missing: RungeKuttaStep";
+        if (!boundaryShader.isLoaded())          ofLogError("WaterSimulation") << "  Missing: Boundary";
+        if (!waterAddShader.isLoaded())          ofLogError("WaterSimulation") << "  Missing: WaterAdd";
+        if (!waterUpdateShader.isLoaded())       ofLogError("WaterSimulation") << "  Missing: WaterUpdate";
+        if (!waterRenderShader.isLoaded())       ofLogError("WaterSimulation") << "  Missing: WaterRender";
         return;
     }
 
