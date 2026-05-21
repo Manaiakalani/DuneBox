@@ -65,17 +65,34 @@ bool setWindowDimensions(ofGLFWWindowSettings& settings, int windowsNum) {
 //========================================================================
 int main() {
 	ofGLFWWindowSettings settings;
-	settings.setGLVersion(3, 2); // GL 3.2 core profile — required for water sim shaders (#version 150)
-//	setFirstWindowDimensions(settings);
-	//settings.width = 1200;
- //	settings.height = 600;
-    settings.width = 1600; // Default settings
-    settings.height = 800;
-    settings.setPosition(ofVec2f(0, 0));
+
+	// Try GL 4.3 first (needed for compute shaders in water simulation).
+	// If the driver/hardware doesn't support it, fall back to GL 3.2.
+	bool useGL43 = true;
+	settings.setGLVersion(4, 3);
+	settings.width = 1600;
+	settings.height = 800;
+	settings.setPosition(ofVec2f(0, 0));
 	settings.resizable = true;
 	settings.decorated = true;
 	settings.title = "Magic-Sand " + MagicSandVersion;
-	shared_ptr<ofAppBaseWindow> mainWindow = ofCreateWindow(settings);
+
+	shared_ptr<ofAppBaseWindow> mainWindow;
+	try {
+		mainWindow = ofCreateWindow(settings);
+	} catch (...) {
+		mainWindow = nullptr;
+	}
+
+	if (!mainWindow || !mainWindow->getWindowSize().x) {
+		// GL 4.3 failed — fall back to GL 3.2
+		ofLogNotice("main") << "GL 4.3 not available, falling back to GL 3.2";
+		useGL43 = false;
+		settings.setGLVersion(3, 2);
+		mainWindow = ofCreateWindow(settings);
+	} else {
+		ofLogNotice("main") << "GL 4.3 context created — compute shaders available";
+	}
     
 	setWindowDimensions(settings, 0);
 	mainWindow->setWindowPosition(ofGetScreenWidth() / 2 - settings.width / 2, ofGetScreenHeight() / 2 - settings.height / 2);

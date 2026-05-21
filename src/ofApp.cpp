@@ -67,7 +67,7 @@ void ofApp::setup() {
 	int waterH = (int)kinectRes.y;
 	if (waterW == 0) waterW = 640;
 	if (waterH == 0) waterH = 480;
-	waterSim.setup(waterW, waterH);
+	waterSimSetup(waterW, waterH);
 
 	// Allocate test terrain FBO for no-Kinect fallback
 	useTestTerrain = false;
@@ -125,7 +125,8 @@ void ofApp::update() {
 			std::string mode = msg.value("mode", "");
 			bool on = msg.value("enabled", false);
 			if (mode == "water") {
-				waterSim.setEnabled(on);
+				if (useComputeWaterSim) waterSimCompute.setEnabled(on);
+				else waterSimFragment.setEnabled(on);
 				ofLogNotice("Bridge") << "Water simulation: " << (on ? "ON" : "OFF");
 			}
 		} else if (type == "pong") {
@@ -139,7 +140,7 @@ void ofApp::update() {
 		bridgeFrameCounter = 0;
 		if (bridge.isConnected()) {
 			ofJson status;
-			status["enabled"] = waterSim.isEnabled();
+			status["enabled"] = waterSimIsEnabled();
 			bridge.send("water_status", status);
 		}
 	}
@@ -149,7 +150,7 @@ void ofApp::update() {
 		themeDisplayTimer -= ofGetLastFrameTime();
 
 	// --- Water simulation update ---
-	if (waterSim.isEnabled()) {
+	if (waterSimIsEnabled()) {
 		// Determine depth texture source
 		if (kinectProjector->isKinectConnected() &&
 		    kinectProjector->GetApplicationState() == KinectProjector::APPLICATION_STATE_RUNNING)
@@ -157,7 +158,7 @@ void ofApp::update() {
 			// Use live Kinect depth data
 			useTestTerrain = false;
 			ofTexture& depthTex = kinectProjector->getTexture();
-			waterSim.update(depthTex, ofGetLastFrameTime());
+			waterSimUpdate(depthTex, ofGetLastFrameTime());
 		}
 		else
 		{
@@ -165,7 +166,7 @@ void ofApp::update() {
 			useTestTerrain = true;
 			generateTestTerrain();
 			ofTexture& testTex = testTerrainFbo.getTexture();
-			waterSim.update(testTex, ofGetLastFrameTime());
+			waterSimUpdate(testTex, ofGetLastFrameTime());
 		}
 
 		// Rain gesture detection
@@ -235,16 +236,16 @@ void ofApp::drawProjWindow(ofEventArgs &args)
 		sandSurfaceRenderer->drawProjectorWindow();
 
 		// Water overlay — composited on top of terrain, under game layers
-		if (waterSim.isEnabled()) {
+		if (waterSimIsEnabled()) {
 			float projW = projWindow->getWidth();
 			float projH = projWindow->getHeight();
-			waterSim.draw(projW, projH);
+			waterSimDraw(projW, projH);
 		}
 
 		mapGameController.drawProjectorWindow();
 		boidGameController.drawProjectorWindow();
 	}
-	else if (useTestTerrain && waterSim.isEnabled())
+	else if (useTestTerrain && waterSimIsEnabled())
 	{
 		// No Kinect running — still show water on test terrain
 		float projW = projWindow->getWidth();
@@ -252,7 +253,7 @@ void ofApp::drawProjWindow(ofEventArgs &args)
 		ofSetColor(40, 30, 20); // Dark brown background for test terrain
 		ofDrawRectangle(0, 0, projW, projH);
 		ofSetColor(255);
-		waterSim.draw(projW, projH);
+		waterSimDraw(projW, projH);
 	}
 	kinectProjector->drawProjectorWindow();
 }
@@ -366,9 +367,9 @@ void ofApp::keyPressed(int key)
 	else if (key == 'w')
 	{
 		// Toggle water simulation
-		waterSim.setEnabled(!waterSim.isEnabled());
-		ofLogNotice("ofApp") << "Water simulation: " << (waterSim.isEnabled() ? "ON" : "OFF");
-		cout << "Water simulation: " << (waterSim.isEnabled() ? "ON" : "OFF") << endl;
+		waterSimToggleEnabled();
+		ofLogNotice("ofApp") << "Water simulation: " << (waterSimIsEnabled() ? "ON" : "OFF");
+		cout << "Water simulation: " << (waterSimIsEnabled() ? "ON" : "OFF") << endl;
 	}
 	else if (key == 'W')
 	{
@@ -502,11 +503,60 @@ void ofApp::detectRainGesture() {
 			float elev = kinectProjector->elevationAtKinectCoord(x, y);
 			if (elev > rainThreshold) {
 				// Map kinect pixel to water sim grid coordinates
-				float simX = ((float)(x - startX) / roi.width) * waterSim.getSimWidth();
-				float simY = ((float)(y - startY) / roi.height) * waterSim.getSimHeight();
-				waterSim.addWater(simX, simY, 15.0f, 0.3f);
+				float simX = ((float)(x - startX) / roi.width) * waterSimGetSimWidth();
+				float simY = ((float)(y - startY) / roi.height) * waterSimGetSimHeight();
+				waterSimAddWater(simX, simY, 15.0f, 0.3f);
 			}
 		}
 	}
 }
 
+// ─── Unified water simulation accessors ─────────────────────────────
+
+void ofApp::waterSimSetup(int w, int h) {
+	// Auto-detect compute shader support (requires GL 4.3+)
+	useComputeWaterSim = ComputeWaterSimulation::isComputeSupported();
+
+	if (useComputeWaterSim) {
+		ofLogNotice("ofApp") << "GL 4.3+ detected — using COMPUTE SHADER water simulation";
+		waterSimCompute.setup(w, h);
+	} else {
+		ofLogNotice("ofApp") << "GL < 4.3 — using FRAGMENT SHADER water simulation (fallback)";
+		waterSimFragment.setup(w, h);
+	}
+}
+
+void ofApp::waterSimUpdate(ofTexture& depthTex, float dt) {
+	if (useComputeWaterSim) waterSimCompute.update(depthTex, dt);
+	else waterSimFragment.update(depthTex, dt);
+}
+
+void ofApp::waterSimDraw(float w, float h) {
+	if (useComputeWaterSim) waterSimCompute.draw(w, h);
+	else waterSimFragment.draw(w, h);
+}
+
+void ofApp::waterSimAddWater(float x, float y, float radius, float amount) {
+	if (useComputeWaterSim) waterSimCompute.addWater(x, y, radius, amount);
+	else waterSimFragment.addWater(x, y, radius, amount);
+}
+
+bool ofApp::waterSimIsEnabled() const {
+	if (useComputeWaterSim) return waterSimCompute.isEnabled();
+	else return waterSimFragment.isEnabled();
+}
+
+void ofApp::waterSimToggleEnabled() {
+	if (useComputeWaterSim) waterSimCompute.setEnabled(!waterSimCompute.isEnabled());
+	else waterSimFragment.setEnabled(!waterSimFragment.isEnabled());
+}
+
+int ofApp::waterSimGetSimWidth() const {
+	if (useComputeWaterSim) return waterSimCompute.getSimWidth();
+	else return waterSimFragment.getSimWidth();
+}
+
+int ofApp::waterSimGetSimHeight() const {
+	if (useComputeWaterSim) return waterSimCompute.getSimHeight();
+	else return waterSimFragment.getSimHeight();
+}
