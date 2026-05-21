@@ -2,6 +2,7 @@
 // Original: Oliver Kreylos, 2014. GPL v2.
 // Simplified water visualization as a blue-tinted overlay.
 // Uses water depth for opacity and adds simple specular highlight.
+// Supports lava mode with emissive volcanic gradient.
 #version 150
 
 uniform sampler2D quantitySampler;
@@ -9,6 +10,7 @@ uniform sampler2D bathymetrySampler;
 uniform vec2 texelSize;
 uniform float waterOpacity;
 uniform float time;
+uniform int uLavaMode;
 
 in vec2 vTexCoord;
 in float waterDepth;
@@ -31,9 +33,45 @@ void main() {
     vec3 halfDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfDir), 0.0), 64.0);
 
-    // Water color: deep blue with depth-based opacity
-    vec3 waterColor = vec3(0.1, 0.3, 0.7);
-    float alpha = clamp(waterDepth * waterOpacity, 0.0, 0.85);
+    if (uLavaMode == 1) {
+        // Lava gradient based on depth
+        float d = clamp(waterDepth * waterOpacity * 0.125, 0.0, 1.0);
 
-    fragColor = vec4(waterColor + vec3(spec * 0.4), alpha);
+        // Cooling crust: very shallow lava darkens to near-black
+        vec3 crustColor = vec3(0.08, 0.02, 0.01);
+        // Shallow: bright orange-yellow with glow
+        vec3 shallowColor = vec3(1.0, 0.784, 0.196);
+        // Medium: deep orange-red
+        vec3 mediumColor = vec3(0.863, 0.314, 0.078);
+        // Deep: dark red-black (cooling lava)
+        vec3 deepColor = vec3(0.314, 0.039, 0.02);
+
+        vec3 lavaColor;
+        if (d < 0.08) {
+            // Cooling crust at the very edges
+            lavaColor = mix(crustColor, shallowColor, d / 0.08);
+        } else if (d < 0.4) {
+            // Shallow → medium
+            lavaColor = mix(shallowColor, mediumColor, (d - 0.08) / 0.32);
+        } else {
+            // Medium → deep
+            lavaColor = mix(mediumColor, deepColor, (d - 0.4) / 0.6);
+        }
+
+        // Emissive glow: brighten based on depth (hotter interior)
+        float glow = smoothstep(0.0, 0.5, d) * 0.4;
+        lavaColor += vec3(glow * 0.6, glow * 0.15, glow * 0.02);
+
+        // Reduce specular for lava (molten surface is diffuse)
+        float lavaSpec = spec * 0.15;
+        float alpha = clamp(waterDepth * waterOpacity, 0.0, 0.95);
+
+        fragColor = vec4(lavaColor + vec3(lavaSpec), alpha);
+    } else {
+        // Water color: deep blue with depth-based opacity
+        vec3 waterColor = vec3(0.1, 0.3, 0.7);
+        float alpha = clamp(waterDepth * waterOpacity, 0.0, 0.85);
+
+        fragColor = vec4(waterColor + vec3(spec * 0.4), alpha);
+    }
 }

@@ -547,6 +547,10 @@ std::string SandSurfaceRenderer::getThemeName() const {
     return themeManager.getCurrentTheme().name;
 }
 
+int SandSurfaceRenderer::getThemeIndex() const {
+    return themeManager.getCurrentIndex();
+}
+
 
 // Note: loadSettings/saveSettings currently persist colorMapFile, drawContourLines,
 // and contourLineDistance. Additional renderer settings could be added here if needed.

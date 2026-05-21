@@ -76,6 +76,9 @@ public:
     void setEnabled(bool enabled);
     bool isEnabled() const { return enabled; }
 
+    void setLavaMode(bool enabled);
+    bool isLavaMode() const { return lavaActive; }
+
     void loadSettings(const std::string& path = "settings/waterSettings.xml");
     void saveSettings(const std::string& path = "settings/waterSettings.xml");
 
@@ -150,6 +153,11 @@ private:
     int maxStepsPerFrame;   // Max simulation substeps per frame (default 5)
     bool enabled;
     bool initialized;
+    bool lavaActive;
+
+    // Saved base values for toggling lava mode
+    float baseAttenuation;
+    float baseWaterOpacity;
 
     int simWidth, simHeight;
 };

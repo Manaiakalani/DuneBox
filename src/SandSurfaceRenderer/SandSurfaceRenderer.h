@@ -88,6 +88,7 @@ public:
     void setTheme(int index);
     void cycleTheme();
     std::string getThemeName() const;
+    int getThemeIndex() const;
    
 private:
     // Private methods

@@ -43,6 +43,7 @@ void ofApp::setup() {
 	// Theme display overlay state
 	themeDisplayName = sandSurfaceRenderer->getThemeName();
 	themeDisplayTimer = 0;
+	preLavaThemeIndex = 0;
 	
 	// Retrieve variables
 	ofVec2f kinectRes = kinectProjector->getKinectRes();
@@ -387,6 +388,29 @@ void ofApp::keyPressed(int key)
 			ofLogNotice("Bridge") << "Not connected";
 		}
 	}
+	else if (key == 'l')
+	{
+		// Toggle lava simulation mode
+		bool newLavaState = !waterSimIsLavaMode();
+		if (newLavaState) {
+			// Save current theme and switch to Volcanic
+			preLavaThemeIndex = sandSurfaceRenderer->getThemeIndex();
+			sandSurfaceRenderer->setTheme(2); // Volcanic
+			themeDisplayName = "Volcanic (Lava)";
+			themeDisplayTimer = 2.5f;
+			// Enable water sim if not already on
+			if (!waterSimIsEnabled()) {
+				waterSimToggleEnabled();
+			}
+		} else {
+			// Restore previous theme
+			sandSurfaceRenderer->setTheme(preLavaThemeIndex);
+			themeDisplayName = sandSurfaceRenderer->getThemeName();
+			themeDisplayTimer = 2.5f;
+		}
+		waterSimSetLavaMode(newLavaState);
+		ofLogNotice("ofApp") << "Lava mode: " << (newLavaState ? "ON" : "OFF");
+	}
 }
 
 void ofApp::keyReleased(int key) {
@@ -559,4 +583,19 @@ int ofApp::waterSimGetSimWidth() const {
 int ofApp::waterSimGetSimHeight() const {
 	if (useComputeWaterSim) return waterSimCompute.getSimHeight();
 	else return waterSimFragment.getSimHeight();
+}
+
+void ofApp::waterSimSetLavaMode(bool enabled) {
+	if (useComputeWaterSim) {
+		waterSimCompute.setFluidType(enabled
+			? ComputeWaterSimulation::FLUID_LAVA
+			: ComputeWaterSimulation::FLUID_WATER);
+	} else {
+		waterSimFragment.setLavaMode(enabled);
+	}
+}
+
+bool ofApp::waterSimIsLavaMode() const {
+	if (useComputeWaterSim) return waterSimCompute.getFluidType() == ComputeWaterSimulation::FLUID_LAVA;
+	else return waterSimFragment.isLavaMode();
 }
