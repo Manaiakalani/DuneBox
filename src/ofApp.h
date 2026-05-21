@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "Games/MapGameController.h"
 #include "Games/BoidGameController.h"
 #include "WaterSimulation/WaterSimulation.h"
+#include "WaterSimulation/ComputeWaterSimulation.h"
 #include "Diagnostics.h"
 #include "Bridge/Bridge.h"
 
@@ -61,8 +62,21 @@ private:
 	CMapGameController mapGameController;
 	CBoidGameController boidGameController;
 
-	// Water simulation
-	WaterSimulation waterSim;
+	// Water simulation — auto-selects compute (GL 4.3+) or fragment (GL 3.2) path
+	WaterSimulation waterSimFragment;
+	ComputeWaterSimulation waterSimCompute;
+	bool useComputeWaterSim;       // True if compute shader path is active
+
+	// Unified accessors that delegate to the active simulation
+	void waterSimSetup(int w, int h);
+	void waterSimUpdate(ofTexture& depthTex, float dt);
+	void waterSimDraw(float w, float h);
+	void waterSimAddWater(float x, float y, float radius, float amount);
+	bool waterSimIsEnabled() const;
+	void waterSimToggleEnabled();
+	int  waterSimGetSimWidth() const;
+	int  waterSimGetSimHeight() const;
+
 	ofFbo testTerrainFbo;          // Fallback terrain when no Kinect
 	bool useTestTerrain;           // True when Kinect is unavailable
 	void generateTestTerrain();    // Fill testTerrainFbo with sine-wave heightfield
