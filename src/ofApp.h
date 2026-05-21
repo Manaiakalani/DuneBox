@@ -74,6 +74,8 @@ private:
 	void waterSimAddWater(float x, float y, float radius, float amount);
 	bool waterSimIsEnabled() const;
 	void waterSimToggleEnabled();
+	void waterSimSetLavaMode(bool enabled);
+	bool waterSimIsLavaMode() const;
 	int  waterSimGetSimWidth() const;
 	int  waterSimGetSimHeight() const;
 
@@ -88,6 +90,9 @@ private:
 	// Theme display overlay
 	std::string themeDisplayName;
 	float themeDisplayTimer;
+
+	// Lava mode state
+	int preLavaThemeIndex;  // theme to restore when lava deactivates
 
 	// Inter-app bridge (Python ↔ C++)
 	Bridge bridge;
