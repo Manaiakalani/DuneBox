@@ -57,17 +57,64 @@ jobs:
       - name: Install addons
         shell: bash
         run: |
+          set -e
           cd openFrameworks/addons
-          git clone --depth 1 https://github.com/kylemcdonald/ofxCv || true
-          git clone --depth 1 https://github.com/braitsch/ofxDatGui || true
-          git clone --depth 1 https://github.com/braitsch/ofxParagraph || true
-          git clone --depth 1 https://github.com/braitsch/ofxModal || true
+          # These four community addons live inside the cached OF tree, so wipe and
+          # re-clone for a deterministic state (a cache hit may hold older versions).
+          rm -rf ofxCv ofxDatGui ofxParagraph ofxModal
+          git clone --depth 1 https://github.com/kylemcdonald/ofxCv
+          git clone --depth 1 https://github.com/braitsch/ofxParagraph
+          git clone --depth 1 https://github.com/braitsch/ofxModal
+          # ofxDatGui: the thomwolf fork matches Magic-Sand's exact API
+          # (ScrollView::get(int), 3-arg ScrollViewEvent, setOptions). Pin a commit.
+          git clone https://github.com/thomwolf/ofxDatGui ofxDatGui
+          git -C ofxDatGui checkout -q 0c2230afa68fe5dea822932f6b4c178778af9440
+          # OF 0.12 removed `using namespace std;` from its headers; ofxDatGui
+          # (0.9-era) relies on it via unqualified string/vector/shared_ptr in its
+          # OWN headers. Re-introduce it per addon header so it compiles on OF 0.12.
+          find ofxDatGui/src -name '*.h' -print0 \
+            | xargs -0 sed -i 's/#pragma once/#pragma once\nusing namespace std;/'
 
       - name: Place project in OF tree
         shell: bash
         run: |
           mkdir -p openFrameworks/apps/myApps
-          cp -r project openFrameworks/apps/myApps/DuneBox
+          cp -r project openFrameworks/apps/myApps/Magic-Sand
+          # Drop the legacy OF-0.9.3 VS project so projectGenerator builds a
+          # clean OF 0.12 one (correct OpenCV 4.x / libusb-1.0 / freenect wiring).
+          rm -f openFrameworks/apps/myApps/Magic-Sand/Magic-Sand.sln \
+                openFrameworks/apps/myApps/Magic-Sand/Magic-Sand.vcxproj \
+                openFrameworks/apps/myApps/Magic-Sand/Magic-Sand.vcxproj.filters
+
+      - name: Regenerate VS project for OF 0.12
+        shell: pwsh
+        run: |
+          $of = (Resolve-Path openFrameworks).Path
+          $app = Join-Path $of "apps\myApps\Magic-Sand"
+          $cands = Get-ChildItem -Path $of -Recurse -Filter projectGenerator.exe -ErrorAction SilentlyContinue
+          Write-Host "projectGenerator.exe candidates:"; $cands | ForEach-Object { Write-Host "  $($_.FullName)" }
+          # Pick the headless commandline binary (…\resources\app\app\projectGenerator.exe),
+          # NOT the Electron GUI launcher (…\projectGenerator\projectGenerator.exe) which would hang.
+          $pg = $cands | Where-Object { $_.FullName -match 'resources[\\/]app[\\/]app' } | Select-Object -First 1
+          if (-not $pg) { $pg = $cands | Where-Object { $_.FullName -match 'resources' } | Select-Object -First 1 }
+          if (-not $pg) { Write-Error "headless projectGenerator.exe not found in the OF release"; exit 1 }
+          Write-Host "Using projectGenerator: $($pg.FullName)"
+          & $pg.FullName "/ofPath=$of" "/platforms=vs" "$app"
+          $vcx = Join-Path $app "Magic-Sand.vcxproj"
+          if (-not (Test-Path $vcx)) {
+            Write-Error "projectGenerator did not produce Magic-Sand.vcxproj"
+            Get-ChildItem $app
+            exit 1
+          }
+          # Re-inject the two defs PG can't know about: dlib needs std::binary_function
+          # (_HAS_AUTO_PTR_ETC) under C++17, and Bridge.h guards winsock with _WINSOCKAPI_.
+          $raw = Get-Content $vcx -Raw
+          $raw = $raw -replace '<PreprocessorDefinitions>', '<PreprocessorDefinitions>_HAS_AUTO_PTR_ETC=1;_WINSOCKAPI_;'
+          Set-Content $vcx $raw
+          if (-not (Select-String -Path $vcx -Pattern '_HAS_AUTO_PTR_ETC=1' -Quiet)) {
+            Write-Error "Failed to inject preprocessor defs into Magic-Sand.vcxproj"; exit 1
+          }
+          Write-Host "Re-injected _HAS_AUTO_PTR_ETC / _WINSOCKAPI_ into Magic-Sand.vcxproj"
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
@@ -75,13 +122,13 @@ jobs:
       - name: Build x64 Release
         shell: cmd
         run: |
-          cd openFrameworks\apps\myApps\DuneBox
+          cd openFrameworks\apps\myApps\Magic-Sand
           msbuild Magic-Sand.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143 /m
 
       - name: Package release
         shell: powershell
         run: |
-          $binDir = "openFrameworks\apps\myApps\DuneBox\bin"
+          $binDir = "openFrameworks\apps\myApps\Magic-Sand\bin"
           
           # Copy OF shared libs needed at runtime
           $ofBinDir = "openFrameworks\libs\openFrameworksCompiled\lib\vs\x64\Release"
@@ -89,10 +136,18 @@ jobs:
             Get-ChildItem "$ofBinDir\*.dll" | Copy-Item -Destination $binDir
           }
 
-          # Copy addon DLLs (libusb for Kinect)
-          $kinectDlls = Get-ChildItem "openFrameworks\addons\ofxKinect" -Recurse -Filter "*.dll" | Where-Object { $_.FullName -like "*x64*" -or $_.FullName -like "*Win32*" }
-          foreach ($dll in $kinectDlls) {
-            Copy-Item $dll.FullName -Destination $binDir -ErrorAction SilentlyContinue
+          # Copy addon runtime DLLs (libusb for Kinect, OpenCV 4 for ofxCv/ofxOpenCv)
+          foreach ($addon in @("ofxKinect","ofxOpenCv","ofxCv")) {
+            $dlls = Get-ChildItem "openFrameworks\addons\$addon" -Recurse -Filter "*.dll" -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like "*x64*" }
+            foreach ($dll in $dlls) {
+              Copy-Item $dll.FullName -Destination $binDir -ErrorAction SilentlyContinue
+            }
+          }
+
+          Write-Host "=== bin\ contents (verify exe + runtime DLLs present) ==="
+          Get-ChildItem $binDir | Select-Object Name, Length | Format-Table -AutoSize | Out-String | Write-Host
+          if (-not (Test-Path "$binDir\Magic-Sand.exe")) {
+            Write-Error "Build did not produce Magic-Sand.exe"; exit 1
           }
 
           # Create zip

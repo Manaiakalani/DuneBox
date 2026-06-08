@@ -23,6 +23,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "ofMain.h"
 #include "ofApp.h"
 
+// Direct GLFW access for multi-monitor enumeration. OF bundles GLFW; define
+// GLFW_INCLUDE_NONE so it doesn't pull in its own GL headers (OF already does).
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+
 const std::string MagicSandVersion = "1.5.4.2";
 
 bool setWindowDimensions(ofGLFWWindowSettings& settings, int windowsNum) {
@@ -39,14 +44,12 @@ bool setWindowDimensions(ofGLFWWindowSettings& settings, int windowsNum) {
 		if (windowsNum == 0)
 		{
 			// Make main window almost full screen - but just a bit of space around to be able to grab other windows
-			settings.width = desktopMode->width * 4.0 / 5.0;
-			settings.height = desktopMode->height * 4.0 / 5.0;
+			settings.setSize(desktopMode->width * 4.0 / 5.0, desktopMode->height * 4.0 / 5.0);
 		}
 		else
 		{
 			// Projector window full screen
-			settings.width = desktopMode->width;
-			settings.height = desktopMode->height;
+			settings.setSize(desktopMode->width, desktopMode->height);
 		}
 
 		settings.setPosition(ofVec2f(xM, yM));
@@ -54,8 +57,7 @@ bool setWindowDimensions(ofGLFWWindowSettings& settings, int windowsNum) {
 		return true;
 	}
 	else {
-		settings.width = 1600; // Default settings
-		settings.height = 800;
+		settings.setSize(1600, 800); // Default settings
 		settings.setPosition(ofVec2f(0, 0));
 		return false;
 	}
@@ -70,8 +72,7 @@ int main() {
 	// If the driver/hardware doesn't support it, fall back to GL 3.2.
 	bool useGL43 = true;
 	settings.setGLVersion(4, 3);
-	settings.width = 1600;
-	settings.height = 800;
+	settings.setSize(1600, 800);
 	settings.setPosition(ofVec2f(0, 0));
 	settings.resizable = true;
 	settings.decorated = true;
@@ -95,8 +96,8 @@ int main() {
 	}
     
 	setWindowDimensions(settings, 0);
-	mainWindow->setWindowPosition(ofGetScreenWidth() / 2 - settings.width / 2, ofGetScreenHeight() / 2 - settings.height / 2);
-    mainWindow->setWindowShape(settings.width, settings.height);
+	mainWindow->setWindowPosition(ofGetScreenWidth() / 2 - settings.getWidth() / 2, ofGetScreenHeight() / 2 - settings.getHeight() / 2);
+    mainWindow->setWindowShape(settings.getWidth(), settings.getHeight());
     
 	setWindowDimensions(settings, 1);
 	settings.resizable = false;

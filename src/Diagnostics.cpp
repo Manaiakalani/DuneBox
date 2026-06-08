@@ -8,6 +8,11 @@ This file is part of DuneBox, a fork of Magic Sand.
 #include "ofxKinect.h"
 #include <fstream>
 
+// Direct GLFW access for monitor enumeration. OF bundles GLFW; define
+// GLFW_INCLUDE_NONE so it doesn't pull in its own GL headers (OF already does).
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
+
 // ── Probing ──────────────────────────────────────────────────────────────────
 
 static DiagnosticItem probeKinect() {
