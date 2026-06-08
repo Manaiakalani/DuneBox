@@ -10,34 +10,26 @@ This file is part of DuneBox, a fork of Magic Sand.
 
 #pragma once
 
-// On Windows, winsock2.h must be pulled in before <windows.h> (which ofMain.h
-// includes) to avoid the winsock 1.1 / 2 redefinition conflict.  Defining
-// _WINSOCKAPI_ stops windows.h from including the legacy winsock.h.
-#ifdef _WIN32
-  #ifndef _WINSOCKAPI_
-    #define _WINSOCKAPI_
-  #endif
-  #include <winsock2.h>
-  #include <ws2tcpip.h>
-#endif
+// NOTE: this header deliberately does NOT include any socket headers.
+// On Windows, ofMain.h pulls in <windows.h> (and thus the legacy winsock.h),
+// so pulling <winsock2.h> in here would clash for every translation unit that
+// includes us (winsock 1.1 / 2 redefinition).  Instead, all winsock2 usage is
+// confined to Bridge.cpp, which includes <winsock2.h> before anything else.
+// Here we expose only a platform-portable socket handle type.
 
 #include "ofMain.h"
 #include <string>
 #include <vector>
 #include <mutex>
 #include <deque>
+#include <cstdint>
 
 #ifdef _WIN32
-  #pragma comment(lib, "ws2_32.lib")
-  typedef SOCKET SocketHandle;
-  #define INVALID_SOCK INVALID_SOCKET
+  // Matches the Win32 SOCKET type (UINT_PTR) and INVALID_SOCKET ((SOCKET)~0)
+  // without needing the winsock headers in this header.
+  typedef std::uintptr_t SocketHandle;
+  #define INVALID_SOCK (~static_cast<SocketHandle>(0))
 #else
-  #include <sys/socket.h>
-  #include <netinet/in.h>
-  #include <arpa/inet.h>
-  #include <unistd.h>
-  #include <fcntl.h>
-  #include <errno.h>
   typedef int SocketHandle;
   #define INVALID_SOCK (-1)
 #endif
