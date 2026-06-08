@@ -1,63 +1,76 @@
 @echo off
-:: DuneBox Launcher — runs the pre-built exe or downloads the latest release
+:: DuneBox Launcher — runs the pre-built exe, or fetches it automatically.
+:: Order: local exe -> published release -> latest successful CI artifact.
 setlocal enabledelayedexpansion
-
 title DuneBox AR Sandbox
 
-set "BINDIR=%~dp0bin"
+set "ROOT=%~dp0"
+set "BINDIR=%ROOT%bin"
 set "EXE=%BINDIR%\Magic-Sand.exe"
+set "REPO=Manaiakalani/DuneBox"
+set "ARTIFACT=DuneBox-windows-x64"
 
-:: If exe exists, just run it
-if exist "%EXE%" (
-    echo Starting DuneBox...
-    cd /d "%BINDIR%"
-    start "" "Magic-Sand.exe"
-    exit /b
-)
+:: 1) Already installed? Just run it.
+if exist "%EXE%" goto :run
 
-:: No exe found — try to download latest release
 echo.
-echo  DuneBox is not built yet.
-echo  Downloading latest release from GitHub...
+echo  DuneBox binary not found - fetching the pre-built app...
 echo.
 
+:: Ensure GitHub CLI is available (needed for private-repo downloads).
 where gh >nul 2>&1
 if %errorlevel% neq 0 (
-    echo  gh CLI not found. Installing via winget...
-    winget install --id GitHub.cli --accept-source-agreements --accept-package-agreements >nul 2>&1
+    echo  Installing GitHub CLI...
+    winget install --id GitHub.cli -e --silent --accept-source-agreements --accept-package-agreements >nul 2>&1
     set "PATH=%PATH%;%ProgramFiles%\GitHub CLI"
 )
 
-:: Download latest release asset
-set "ZIPFILE=%TEMP%\DuneBox-windows-x64.zip"
-gh release download --repo Manaiakalani/DuneBox --pattern "DuneBox-windows-x64.zip" --output "%ZIPFILE%" 2>nul
+:: Ensure we're signed in (private repo).
+gh auth status >nul 2>&1
+if %errorlevel% neq 0 (
+    echo  One-time GitHub sign-in required...
+    gh auth login --hostname github.com --git-protocol https --web
+)
 
-if not exist "%ZIPFILE%" (
-    echo.
-    echo  ❌ No release found. The first CI build hasn't run yet.
-    echo.
-    echo  Options:
-    echo    1. Push a tag to trigger a release:
-    echo       git tag v0.1.0 ^&^& git push origin v0.1.0
-    echo.
-    echo    2. Or build manually with Visual Studio:
-    echo       Open Magic-Sand.sln → x64 Release → Build
-    echo.
+:: 2) Try the latest published release asset.
+set "ZIPFILE=%TEMP%\DuneBox-windows-x64.zip"
+if exist "%ZIPFILE%" del "%ZIPFILE%" >nul 2>&1
+gh release download --repo %REPO% --pattern "%ARTIFACT%.zip" --output "%ZIPFILE%" >nul 2>&1
+if exist "%ZIPFILE%" goto :extract
+
+:: 3) Fall back to the artifact from the latest successful build (no tag needed).
+echo  No release yet - checking latest successful CI build...
+for /f "usebackq delims=" %%i in (`gh run list --repo %REPO% --workflow "Build & Release" --status success --limit 1 --json databaseId --jq ".[0].databaseId" 2^>nul`) do set "RUNID=%%i"
+if not "%RUNID%"=="" (
+    set "ADIR=%TEMP%\dunebox-artifact"
+    if exist "!ADIR!" rmdir /s /q "!ADIR!" >nul 2>&1
+    gh run download !RUNID! --repo %REPO% --name %ARTIFACT% --dir "!ADIR!" >nul 2>&1
+    for %%z in ("!ADIR!\*.zip") do set "ZIPFILE=%%z"
+    if exist "!ZIPFILE!" goto :extract
+)
+
+echo.
+echo  No pre-built binary is available yet.
+echo  A build may still be running. Check:
+echo     gh run list --repo %REPO%
+echo  Then double-click run.bat again once it succeeds.
+echo.
+pause
+exit /b 1
+
+:extract
+echo  Extracting to bin\...
+if not exist "%BINDIR%" mkdir "%BINDIR%"
+powershell -NoProfile -Command "Expand-Archive -Path '%ZIPFILE%' -DestinationPath '%BINDIR%' -Force"
+del "%ZIPFILE%" >nul 2>&1
+if not exist "%EXE%" (
+    echo  Extract failed - Magic-Sand.exe not found.
     pause
     exit /b 1
 )
 
-:: Extract
-echo  Extracting to bin\...
-if not exist "%BINDIR%" mkdir "%BINDIR%"
-powershell -Command "Expand-Archive -Path '%ZIPFILE%' -DestinationPath '%BINDIR%' -Force"
-del "%ZIPFILE%"
-
-if exist "%EXE%" (
-    echo  ✅ Ready! Starting DuneBox...
-    cd /d "%BINDIR%"
-    start "" "Magic-Sand.exe"
-) else (
-    echo  ❌ Extract failed — exe not found.
-    pause
-)
+:run
+echo  Starting DuneBox...
+cd /d "%BINDIR%"
+start "" "Magic-Sand.exe"
+exit /b 0
