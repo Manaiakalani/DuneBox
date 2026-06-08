@@ -4,6 +4,24 @@ Bridge.cpp — inter-app communication bridge (TCP/JSON)
 This file is part of DuneBox, a fork of Magic Sand.
 ***********************************************************************/
 
+// Socket headers must come first.  On Windows, <winsock2.h> must precede any
+// inclusion of <windows.h> (which ofMain.h, included via Bridge.h below, pulls
+// in) — winsock2.h defines _WINSOCKAPI_ so windows.h then skips the legacy
+// winsock.h, avoiding the winsock 1.1 / 2 redefinition conflict.  This is the
+// only translation unit that touches winsock2.
+#ifdef _WIN32
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+  #pragma comment(lib, "ws2_32.lib")
+#else
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
+  #include <unistd.h>
+  #include <fcntl.h>
+  #include <errno.h>
+#endif
+
 #include "Bridge.h"
 
 // ── helpers ──────────────────────────────────────────────────────────
