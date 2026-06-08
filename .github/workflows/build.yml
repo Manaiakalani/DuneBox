@@ -110,15 +110,18 @@ jobs:
             Get-ChildItem $app
             exit 1
           }
-          # Re-inject the two defs PG can't know about: dlib needs std::binary_function
-          # (_HAS_AUTO_PTR_ETC) under C++17, and Bridge.h guards winsock with _WINSOCKAPI_.
+          # Re-inject the one def PG can't know about: dlib needs std::binary_function
+          # (_HAS_AUTO_PTR_ETC) under C++17. Do NOT inject _WINSOCKAPI_ project-wide —
+          # it would guard winsock out of ofxKinect's libfreenect/core.c (undefined
+          # 'struct timeval'). Bridge.h already defines _WINSOCKAPI_ locally before
+          # including winsock2.h, so the winsock 1/2 conflict is handled per-file.
           $raw = Get-Content $vcx -Raw
-          $raw = $raw -replace '<PreprocessorDefinitions>', '<PreprocessorDefinitions>_HAS_AUTO_PTR_ETC=1;_WINSOCKAPI_;'
+          $raw = $raw -replace '<PreprocessorDefinitions>', '<PreprocessorDefinitions>_HAS_AUTO_PTR_ETC=1;'
           Set-Content $vcx $raw
           if (-not (Select-String -Path $vcx -Pattern '_HAS_AUTO_PTR_ETC=1' -Quiet)) {
             Write-Error "Failed to inject preprocessor defs into Magic-Sand.vcxproj"; exit 1
           }
-          Write-Host "Re-injected _HAS_AUTO_PTR_ETC / _WINSOCKAPI_ into Magic-Sand.vcxproj"
+          Write-Host "Re-injected _HAS_AUTO_PTR_ETC into Magic-Sand.vcxproj"
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
