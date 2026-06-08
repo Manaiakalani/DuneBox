@@ -10,6 +10,17 @@ This file is part of DuneBox, a fork of Magic Sand.
 
 #pragma once
 
+// On Windows, winsock2.h must be pulled in before <windows.h> (which ofMain.h
+// includes) to avoid the winsock 1.1 / 2 redefinition conflict.  Defining
+// _WINSOCKAPI_ stops windows.h from including the legacy winsock.h.
+#ifdef _WIN32
+  #ifndef _WINSOCKAPI_
+    #define _WINSOCKAPI_
+  #endif
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+#endif
+
 #include "ofMain.h"
 #include <string>
 #include <vector>
@@ -17,8 +28,6 @@ This file is part of DuneBox, a fork of Magic Sand.
 #include <deque>
 
 #ifdef _WIN32
-  #include <winsock2.h>
-  #include <ws2tcpip.h>
   #pragma comment(lib, "ws2_32.lib")
   typedef SOCKET SocketHandle;
   #define INVALID_SOCK INVALID_SOCKET
