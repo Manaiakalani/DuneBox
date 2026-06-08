@@ -99,7 +99,11 @@ jobs:
           if (-not $pg) { $pg = $cands | Where-Object { $_.FullName -match 'resources' } | Select-Object -First 1 }
           if (-not $pg) { Write-Error "headless projectGenerator.exe not found in the OF release"; exit 1 }
           Write-Host "Using projectGenerator: $($pg.FullName)"
-          & $pg.FullName "/ofPath=$of" "/platforms=vs" "$app"
+          # PG uses the Lean Mean C++ Option Parser: long options need the GNU
+          # "--key=value" form (a leading "/" or a space-separated value is parsed
+          # as the positional project path instead). The VS platform token is "vs".
+          & $pg.FullName "--ofPath=$of" "--platforms=vs" "$app" 2>&1 | Write-Host
+          Write-Host "projectGenerator exit code: $LASTEXITCODE"
           $vcx = Join-Path $app "Magic-Sand.vcxproj"
           if (-not (Test-Path $vcx)) {
             Write-Error "projectGenerator did not produce Magic-Sand.vcxproj"
