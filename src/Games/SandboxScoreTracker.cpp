@@ -107,18 +107,15 @@ std::string CSandboxScoreTracker::getScoreImage(int idx)
 bool CSandboxScoreTracker::SaveScoresXML(std::string &fname)
 {
 	ofXml XMLOut;
-	XMLOut.addChild("scores");
-	XMLOut.setTo("scores");
+	auto root = XMLOut.appendChild("scores");
 
 	for (int i = 0; i < scores.size(); i++)
 	{
-		XMLOut.addChild("score");
-		XMLOut.setTo("score[" + ofToString(i) + "]");
-		XMLOut.setAttribute("id", ofToString(i));
-		XMLOut.addValue("value", scores[i]);
-		XMLOut.addValue("image", scoreImages[i]);
-		XMLOut.addValue("date", scoreDates[i]);
-		XMLOut.setToParent();
+		auto score = root.appendChild("score");
+		score.setAttribute("id", ofToString(i));
+		score.appendChild("value").set(scores[i]);
+		score.appendChild("image").set(scoreImages[i]);
+		score.appendChild("date").set(scoreDates[i]);
 	}
 	return XMLOut.save(fname);
 }
@@ -135,24 +132,17 @@ bool CSandboxScoreTracker::LoadScoresXML(std::string &fname)
 	scoreImages.clear();
 	scoreDates.clear();
 
-	XMLIn.setTo("scores");
+	auto root = XMLIn.getChild("scores");
 
-	int nscores = XMLIn.getNumChildren(); // how many do you have?
-
-	for (int i = 0; i < nscores; i++)
+	for (auto& score : root.getChildren("score"))
 	{
-		if (XMLIn.setTo("score[" + ofToString(i) + "]"))
-		{
-			int tsc = XMLIn.getValue<int>("value");
-			std::string tI = XMLIn.getValue<string>("image");
-			std::string tD = XMLIn.getValue<string>("date");
+		int tsc = score.getChild("value").getIntValue();
+		std::string tI = score.getChild("image").getValue();
+		std::string tD = score.getChild("date").getValue();
 
-			scores.push_back(tsc);
-			scoreImages.push_back(tI);
-			scoreDates.push_back(tD);
-
-			XMLIn.setToParent();
-		}
+		scores.push_back(tsc);
+		scoreImages.push_back(tI);
+		scoreDates.push_back(tD);
 	}
 
 	return true;

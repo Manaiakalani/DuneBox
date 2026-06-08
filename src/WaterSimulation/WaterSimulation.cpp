@@ -536,20 +536,22 @@ void WaterSimulation::loadSettings(const std::string& path) {
         ofLogNotice("WaterSimulation") << "No settings file at " << path << ", using defaults";
         return;
     }
-    xml.setTo("WATERSIMULATION");
-    gravity        = xml.getValue<float>("gravity");
-    attenuation    = xml.getValue<float>("attenuation");
-    theta          = xml.getValue<float>("theta");
-    epsilon        = xml.getValue<float>("epsilon");
-    cellSize       = xml.getValue<float>("cellSize");
-    waterOpacity   = xml.getValue<float>("waterOpacity");
-    fixedDt        = xml.getValue<float>("fixedDt");
-    maxStepsPerFrame = xml.getValue<int>("maxStepsPerFrame");
-    enabled        = xml.getValue<bool>("enabled");
+    auto root = xml.getChild("WATERSIMULATION");
+    if (auto c = root.getChild("gravity")) gravity = c.getFloatValue();
+    if (auto c = root.getChild("attenuation")) attenuation = c.getFloatValue();
+    if (auto c = root.getChild("theta")) theta = c.getFloatValue();
+    if (auto c = root.getChild("epsilon")) epsilon = c.getFloatValue();
+    if (auto c = root.getChild("cellSize")) cellSize = c.getFloatValue();
+    if (auto c = root.getChild("waterOpacity")) waterOpacity = c.getFloatValue();
+    if (auto c = root.getChild("fixedDt")) fixedDt = c.getFloatValue();
+    if (auto c = root.getChild("maxStepsPerFrame")) maxStepsPerFrame = c.getIntValue();
+    if (auto c = root.getChild("enabled")) enabled = c.getBoolValue();
 
-    bool savedLavaMode = xml.getValue<bool>("lavaMode");
-    if (savedLavaMode != lavaActive) {
-        setLavaMode(savedLavaMode);
+    if (auto c = root.getChild("lavaMode")) {
+        bool savedLavaMode = c.getBoolValue();
+        if (savedLavaMode != lavaActive) {
+            setLavaMode(savedLavaMode);
+        }
     }
 
     ofLogNotice("WaterSimulation") << "Settings loaded from " << path;
@@ -557,19 +559,17 @@ void WaterSimulation::loadSettings(const std::string& path) {
 
 void WaterSimulation::saveSettings(const std::string& path) {
     ofXml xml;
-    xml.addChild("WATERSIMULATION");
-    xml.setTo("WATERSIMULATION");
-    xml.addValue("gravity", gravity);
-    xml.addValue("attenuation", attenuation);
-    xml.addValue("theta", theta);
-    xml.addValue("epsilon", epsilon);
-    xml.addValue("cellSize", cellSize);
-    xml.addValue("waterOpacity", waterOpacity);
-    xml.addValue("fixedDt", fixedDt);
-    xml.addValue("maxStepsPerFrame", maxStepsPerFrame);
-    xml.addValue("enabled", enabled);
-    xml.addValue("lavaMode", lavaActive);
-    xml.setToParent();
+    auto root = xml.appendChild("WATERSIMULATION");
+    root.appendChild("gravity").set(gravity);
+    root.appendChild("attenuation").set(attenuation);
+    root.appendChild("theta").set(theta);
+    root.appendChild("epsilon").set(epsilon);
+    root.appendChild("cellSize").set(cellSize);
+    root.appendChild("waterOpacity").set(waterOpacity);
+    root.appendChild("fixedDt").set(fixedDt);
+    root.appendChild("maxStepsPerFrame").set(maxStepsPerFrame);
+    root.appendChild("enabled").set(enabled);
+    root.appendChild("lavaMode").set(lavaActive);
 
     if (xml.save(path)) {
         ofLogNotice("WaterSimulation") << "Settings saved to " << path;

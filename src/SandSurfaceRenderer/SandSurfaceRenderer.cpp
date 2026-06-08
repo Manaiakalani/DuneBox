@@ -200,7 +200,7 @@ void SandSurfaceRenderer::setupMesh(){
         {
             ofPoint pt = ofPoint(x+kinectROI.x,y+kinectROI.y,0.0f)-ofPoint(0.5,0.5,0); // We move of a half pixel to center the color pixel (more beautiful)
             mesh.addVertex(pt); // make a new vertex
-            mesh.addTexCoord(pt);
+            mesh.addTexCoord(glm::vec2(pt.x, pt.y));
         }
     for(unsigned int y=0;y<meshheight-1;y++)
         for(unsigned int x=0;x<meshwidth-1;x++)
@@ -588,13 +588,14 @@ bool SandSurfaceRenderer::loadSettings(){
     ofXml xml;
     if (!xml.load(settingsFile))
         return false;
-    xml.setTo("SURFACERENDERERSETTINGS");
-    colorMapFile = xml.getValue<string>("colorMapFile");
-    drawContourLines = xml.getValue<bool>("drawContourLines");
-    contourLineDistance = xml.getValue<float>("contourLineDistance");
+    auto root = xml.getChild("SURFACERENDERERSETTINGS");
+    if (auto c = root.getChild("colorMapFile")) colorMapFile = c.getValue();
+    if (auto c = root.getChild("drawContourLines")) drawContourLines = c.getBoolValue();
+    if (auto c = root.getChild("contourLineDistance")) contourLineDistance = c.getFloatValue();
 
     // Theme index (defaults to 0 = Topo if not present)
-    int themeIdx = xml.getValue<int>("colorThemeIndex", 0);
+    int themeIdx = 0;
+    if (auto c = root.getChild("colorThemeIndex")) themeIdx = c.getIntValue();
     themeManager.setTheme(themeIdx);
 
     return true;
@@ -604,13 +605,11 @@ bool SandSurfaceRenderer::saveSettings(){
     string settingsFile = "settings/sandSurfaceRendererSettings.xml";
 
     ofXml xml;
-    xml.addChild("SURFACERENDERERSETTINGS");
-    xml.setTo("SURFACERENDERERSETTINGS");
-    xml.addValue("colorMapFile", colorMapFile);
-    xml.addValue("drawContourLines", drawContourLines);
-    xml.addValue("contourLineDistance", contourLineDistance);
-    xml.addValue("colorThemeIndex", themeManager.getCurrentIndex());
-    xml.setToParent();
+    auto root = xml.appendChild("SURFACERENDERERSETTINGS");
+    root.appendChild("colorMapFile").set(colorMapFile);
+    root.appendChild("drawContourLines").set(drawContourLines);
+    root.appendChild("contourLineDistance").set(contourLineDistance);
+    root.appendChild("colorThemeIndex").set(themeManager.getCurrentIndex());
     return xml.save(settingsFile);
 }
 
