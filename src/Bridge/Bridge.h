@@ -74,6 +74,11 @@ private:
 
     std::mutex  sendMtx;
     std::deque<std::string> sendQueue;
+    // Bytes of sendQueue.front() already written (for non-blocking partial sends).
+    size_t      sendOffset = 0;
+    // Cap the outgoing backlog so an absent/slow peer can't grow memory without
+    // bound in a long-running installation; oldest messages are dropped first.
+    static constexpr size_t MAX_SEND_QUEUE = 1024;
 
     std::mutex  recvMtx;
     std::vector<ofJson> recvQueue;
