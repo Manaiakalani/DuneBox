@@ -8,6 +8,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Allow the Create release step to publish releases/tags.
+permissions:
+  contents: write
+
 env:
   OF_VERSION: "0.12.0"
 
