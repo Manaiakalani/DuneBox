@@ -12,12 +12,20 @@ on:
 permissions:
   contents: write
 
+# Cancel superseded runs on the same ref (saves CI minutes on rapid pushes).
+# Tags/branches are distinct refs, so release builds are never cancelled by a
+# branch build and vice-versa.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   OF_VERSION: "0.12.0"
 
 jobs:
   build-windows:
     runs-on: windows-2022
+    timeout-minutes: 45
     steps:
       - name: Checkout DuneBox
         uses: actions/checkout@v5
@@ -51,13 +59,15 @@ jobs:
           # These four community addons live inside the cached OF tree, so wipe and
           # re-clone for a deterministic state (a cache hit may hold older versions).
           rm -rf ofxCv ofxDatGui ofxParagraph ofxModal
-          git clone --depth 1 https://github.com/kylemcdonald/ofxCv
-          git clone --depth 1 https://github.com/braitsch/ofxParagraph
-          git clone --depth 1 https://github.com/braitsch/ofxModal
+          # Pin every addon to a specific commit for reproducible builds (the app
+          # depends on specific addon APIs; floating HEAD could break CI silently).
+          clone_pin() { git clone -q "https://github.com/$1" "$2" && git -C "$2" checkout -q "$3"; }
+          clone_pin kylemcdonald/ofxCv        ofxCv        209a3986a8f8e1928c7a11f6e1c5d8ea5406e639
+          clone_pin braitsch/ofxParagraph     ofxParagraph 41dbfd2e07e00e358629d470dd1b6f986dee2b70
+          clone_pin braitsch/ofxModal         ofxModal     71bfaa283407bbe58b921fd581d8665f21cf5eb8
           # ofxDatGui: the thomwolf fork matches Magic-Sand's exact API
-          # (ScrollView::get(int), 3-arg ScrollViewEvent, setOptions). Pin a commit.
-          git clone https://github.com/thomwolf/ofxDatGui ofxDatGui
-          git -C ofxDatGui checkout -q 0c2230afa68fe5dea822932f6b4c178778af9440
+          # (ScrollView::get(int), 3-arg ScrollViewEvent, setOptions).
+          clone_pin thomwolf/ofxDatGui        ofxDatGui    0c2230afa68fe5dea822932f6b4c178778af9440
           # OF 0.12 removed `using namespace std;` from its headers; ofxDatGui
           # (0.9-era) relies on it via unqualified string/vector/shared_ptr in its
           # OWN headers. Re-introduce it per addon header so it compiles on OF 0.12.
