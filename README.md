@@ -7,6 +7,7 @@ A cross-platform augmented reality sandbox that projects real-time topographic m
 ![Status](https://img.shields.io/badge/status-proof%20of%20concept-orange)
 ![Language](https://img.shields.io/badge/lang-C%2B%2B-blue)
 ![Framework](https://img.shields.io/badge/framework-OpenFrameworks-lightgrey)
+[![Build & Release](https://github.com/Manaiakalani/DuneBox/actions/workflows/build.yml/badge.svg)](https://github.com/Manaiakalani/DuneBox/actions/workflows/build.yml)
 
 ## Features
 
@@ -76,6 +77,10 @@ Or manually: clone this repo and double-click **`run.bat`** — it auto-download
 ### Build from source (if you want to modify the code)
 This repo ships **no IDE project files** — generate them for your platform with
 OpenFrameworks' projectGenerator (the committed app is otherwise OF-0.9 stale).
+
+> **Git LFS:** the reference map imagery under `bin/data/` is stored with
+> [Git LFS](https://git-lfs.com). Install it (`git lfs install`) before cloning
+> so those assets download as real files rather than pointer stubs.
 ```bash
 # 1. Install OpenFrameworks 0.12.0 from openframeworks.cc
 # 2. Clone this repo into  openFrameworks/apps/myApps/Magic-Sand
@@ -90,8 +95,11 @@ OpenFrameworks' projectGenerator (the committed app is otherwise OF-0.9 stale).
 #             Magic-Sand.xcodeproj -> Build
 #    Linux:   make && make run
 ```
-> The CI workflow (`.github/workflows/build.yml`) does exactly this on Windows
-> and is the reference for the exact addon pins and build flags.
+> The CI workflow (`.github/workflows/build.yml`) is the reference for the exact
+> addon pins and build flags. It builds and releases on **Windows** (MSVC, via
+> projectGenerator) and compile-checks every push on **Linux** (GCC, via
+> OpenFrameworks' template Makefiles); a **macOS** build (Clang) runs on demand
+> via *Run workflow* and on release tags. Windows is the only release target.
 
 Press **`w`** to toggle water simulation. Works without a Kinect (test terrain fallback).
 
