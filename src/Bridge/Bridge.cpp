@@ -90,7 +90,12 @@ void Bridge::tryConnect() {
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons((uint16_t)port);
-    inet_pton(AF_INET, host.c_str(), &addr.sin_addr);
+    if (inet_pton(AF_INET, host.c_str(), &addr.sin_addr) != 1) {
+        ofLogWarning("Bridge") << "Invalid bridge host '" << host
+                               << "' (expected a numeric IPv4 address)";
+        closeSock(sock);
+        return;
+    }
 
     if (::connect(sock, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
         closeSock(sock);
@@ -111,6 +116,9 @@ void Bridge::disconnect() {
     closeSock(sock);
     connected = false;
     recvBuf.clear();
+    // Any partially-sent front line went to the now-dead socket; reset the
+    // offset so it is re-sent in full on the next connection.
+    sendOffset = 0;
 }
 
 bool Bridge::setNonBlocking(SocketHandle s) {
@@ -150,14 +158,26 @@ void Bridge::send(const std::string& type, const ofJson& data) {
 
     std::lock_guard<std::mutex> lock(sendMtx);
     sendQueue.push_back(std::move(line));
+    // Bound the backlog. When over the cap, drop the oldest message — but never
+    // the front if it is mid-transmission (sendOffset > 0), as its head bytes
+    // are already on the wire; drop the next one instead to avoid corrupting it.
+    while (sendQueue.size() > MAX_SEND_QUEUE) {
+        if (sendOffset > 0 && sendQueue.size() >= 2) {
+            sendQueue.erase(sendQueue.begin() + 1);
+        } else {
+            sendQueue.pop_front();
+        }
+    }
 }
 
 void Bridge::flushOutgoing() {
     std::lock_guard<std::mutex> lock(sendMtx);
 
     while (!sendQueue.empty()) {
-        const std::string& line = sendQueue.front();
-        int sent = ::send(sock, line.c_str(), (int)line.size(), 0);
+        std::string& line = sendQueue.front();
+        const char* data = line.c_str() + sendOffset;
+        int remaining = (int)(line.size() - sendOffset);
+        int sent = ::send(sock, data, remaining, 0);
         if (sent <= 0) {
 #ifdef _WIN32
             int err = WSAGetLastError();
@@ -169,7 +189,14 @@ void Bridge::flushOutgoing() {
             disconnect();
             return;
         }
+        if (sent < remaining) {
+            // Partial write on the non-blocking socket: keep the unsent tail at
+            // the front and resume from here on the next flush.
+            sendOffset += (size_t)sent;
+            return;
+        }
         sendQueue.pop_front();
+        sendOffset = 0;
     }
 }
 
