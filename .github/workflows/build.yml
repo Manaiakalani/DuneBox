@@ -235,6 +235,11 @@ jobs:
           # GNU (Linux) and BSD (macOS) userlands.
           find ofxDatGui/src -name '*.h' -print0 \
             | xargs -0 perl -i -pe 's/#pragma once/#pragma once\nusing namespace std;/'
+          # ofxCv's Tracker.h declares its constructor with the non-standard
+          # injected-class-name form `Tracker<T>()`, which GCC/Clang reject
+          # (MSVC tolerates it). Normalise to the legal `Tracker()` spelling.
+          perl -i -pe 's/\bTracker<T>\s*\(\)/Tracker()/g' \
+            ofxCv/libs/ofxCv/include/ofxCv/Tracker.h
 
       - name: Place project + template makefiles
         shell: bash
@@ -305,6 +310,11 @@ jobs:
           clone_pin thomwolf/ofxDatGui        ofxDatGui    0c2230afa68fe5dea822932f6b4c178778af9440
           find ofxDatGui/src -name '*.h' -print0 \
             | xargs -0 perl -i -pe 's/#pragma once/#pragma once\nusing namespace std;/'
+          # ofxCv's Tracker.h declares its constructor with the non-standard
+          # injected-class-name form `Tracker<T>()`, which GCC/Clang reject
+          # (MSVC tolerates it). Normalise to the legal `Tracker()` spelling.
+          perl -i -pe 's/\bTracker<T>\s*\(\)/Tracker()/g' \
+            ofxCv/libs/ofxCv/include/ofxCv/Tracker.h
 
       - name: Place project + template makefiles
         shell: bash
