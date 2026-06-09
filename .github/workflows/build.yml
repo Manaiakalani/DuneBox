@@ -16,22 +16,7 @@ env:
   OF_VERSION: "0.12.0"
 
 jobs:
-  validate-project:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout DuneBox
-        uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      - name: Check vcxproj matches src/ tree
-        run: python3 scripts/check_vcxproj.py
-
   build-windows:
-    needs: validate-project
     runs-on: windows-2022
     steps:
       - name: Checkout DuneBox
@@ -84,8 +69,9 @@ jobs:
         run: |
           mkdir -p openFrameworks/apps/myApps
           cp -r project openFrameworks/apps/myApps/Magic-Sand
-          # Drop the legacy OF-0.9.3 VS project so projectGenerator builds a
-          # clean OF 0.12 one (correct OpenCV 4.x / libusb-1.0 / freenect wiring).
+          # Defensive: drop any committed IDE project files so projectGenerator
+          # always builds a clean OF 0.12 one (correct OpenCV 4.x / libusb-1.0 /
+          # freenect wiring). The repo no longer ships these, but guard anyway.
           rm -f openFrameworks/apps/myApps/Magic-Sand/Magic-Sand.sln \
                 openFrameworks/apps/myApps/Magic-Sand/Magic-Sand.vcxproj \
                 openFrameworks/apps/myApps/Magic-Sand/Magic-Sand.vcxproj.filters

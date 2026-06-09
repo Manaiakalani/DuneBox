@@ -74,15 +74,24 @@ This downloads the pre-built app, creates desktop shortcuts, and you're done.
 Or manually: clone this repo and double-click **`run.bat`** — it auto-downloads the latest release.
 
 ### Build from source (if you want to modify the code)
+This repo ships **no IDE project files** — generate them for your platform with
+OpenFrameworks' projectGenerator (the committed app is otherwise OF-0.9 stale).
 ```bash
 # 1. Install OpenFrameworks 0.12.0 from openframeworks.cc
-# 2. Clone into openFrameworks/apps/myApps/DuneBox
-# 3. Install addons: ofxCv, ofxDatGui, ofxParagraph, ofxModal
-# 4. Build:
-#    Windows: Open Magic-Sand.sln → x64 Release → Build
-#    macOS:   Open Magic-Sand.xcodeproj → Build
+# 2. Clone this repo into  openFrameworks/apps/myApps/Magic-Sand
+#    (keep the folder name "Magic-Sand" so the binary is Magic-Sand.exe)
+# 3. Install community addons into openFrameworks/addons/:
+#      ofxCv, ofxParagraph, ofxModal, and the thomwolf fork of ofxDatGui
+#      (ofxKinect, ofxOpenCv, ofxXmlSettings ship with OpenFrameworks)
+# 4. Generate the project for your platform, then build:
+#    Windows: run projectGenerator (import the folder) -> open the generated
+#             Magic-Sand.sln -> x64 Release -> Build
+#    macOS:   run projectGenerator (import the folder) -> open the generated
+#             Magic-Sand.xcodeproj -> Build
 #    Linux:   make && make run
 ```
+> The CI workflow (`.github/workflows/build.yml`) does exactly this on Windows
+> and is the reference for the exact addon pins and build flags.
 
 Press **`w`** to toggle water simulation. Works without a Kinect (test terrain fallback).
 
