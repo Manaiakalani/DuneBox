@@ -79,6 +79,10 @@ private:
     // Cap the outgoing backlog so an absent/slow peer can't grow memory without
     // bound in a long-running installation; oldest messages are dropped first.
     static constexpr size_t MAX_SEND_QUEUE = 1024;
+    // Cap the unparsed inbound buffer. A peer that never sends a newline (buggy
+    // or hostile) would otherwise grow recvBuf without bound. 1 MiB is far larger
+    // than any legitimate NDJSON control line.
+    static constexpr size_t MAX_RECV_BUF = 1u << 20;
 
     std::mutex  recvMtx;
     std::vector<ofJson> recvQueue;

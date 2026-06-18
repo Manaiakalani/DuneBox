@@ -471,7 +471,7 @@ float KinectGrabber::findInpaintValue(float *data, int x, int y)
 	double sumval = 0;
 	for (int y = tminy; y < tmaxy; y++)
 	{
-		for (int x = tminx; x < tmaxy; x++)
+		for (int x = tminx; x < tmaxx; x++)
 		{
 			int idx = y * width + x;
 			float val = data[idx];
@@ -512,8 +512,8 @@ void KinectGrabber::applySimpleOutlierInpainting()
 	// No valid samples found in ROI - strange situation
 	if (samples == 0)
 		ROIAverageValue = initialValue;
-	
-	ROIAverageValue /= samples;
+	else
+		ROIAverageValue /= samples;
 
 	setToLocalAvg = 0;
 	setToGlobalAvg = 0;
