@@ -209,6 +209,17 @@ void Bridge::readIncoming() {
         int n = ::recv(sock, buf, sizeof(buf), 0);
         if (n > 0) {
             recvBuf.append(buf, n);
+            // Guard against a peer that never delimits a line: if the buffer has
+            // grown past the cap with no newline in sight, the stream is invalid.
+            if (recvBuf.size() > MAX_RECV_BUF &&
+                recvBuf.find('\n') == std::string::npos) {
+                ofLogWarning("Bridge")
+                    << "recv buffer exceeded " << MAX_RECV_BUF
+                    << " bytes without a newline — disconnecting";
+                recvBuf.clear();
+                disconnect();
+                return;
+            }
         } else if (n == 0) {
             ofLogNotice("Bridge") << "Peer disconnected";
             disconnect();
