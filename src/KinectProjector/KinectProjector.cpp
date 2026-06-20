@@ -97,6 +97,21 @@ void KinectProjector::setup(bool sdisplayGui)
             }
         }
     }
+
+    // The realtime depth pipeline (update(), framefilter, world matrix,
+    // getRawDepthAt(), and every performInThread() call) is currently wired
+    // exclusively to the V1 'kinectgrabber'. Selecting V2 or Azure opens that
+    // device but leaves the pipeline running on the never-opened V1 grabber,
+    // producing a silently broken capture. Until the sensor backend is unified
+    // behind a common interface, force V1 and warn loudly so the limitation is
+    // explicit rather than a silent failure.
+    if (kinectVersion != 1) {
+        ofLogWarning("KinectProjector")
+            << "kinectVersion=" << kinectVersion
+            << " is not yet supported by the realtime depth pipeline; falling "
+            << "back to Kinect V1. V2/Azure support requires a backend refactor.";
+        kinectVersion = 1;
+    }
     ofLogNotice("KinectProjector") << "Using kinectVersion=" << kinectVersion;
 
     if (kinectVersion == 2) {
@@ -1904,6 +1919,15 @@ bool KinectProjector::loadSettings(){
 	if (auto c = root.getChild("FullFrameFiltering")) doFullFrameFiltering = c.getBoolValue();
     kinectVersion = 1;
     if (auto c = root.getChild("kinectVersion")) kinectVersion = c.getIntValue();
+    // Normalize any persisted V2/Azure selection back to V1: the realtime
+    // pipeline only supports V1 (see setup()), so a stale 2/3 must not
+    // round-trip back into the saved settings.
+    if (kinectVersion != 1) {
+        ofLogWarning("KinectProjector")
+            << "Ignoring unsupported kinectVersion=" << kinectVersion
+            << " from settings; using Kinect V1.";
+        kinectVersion = 1;
+    }
     return true;
 }
 
