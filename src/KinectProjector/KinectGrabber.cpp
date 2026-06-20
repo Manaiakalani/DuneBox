@@ -362,6 +362,15 @@ void KinectGrabber::setFullFrameFiltering(bool ff, ofRectangle ROI)
 
 void KinectGrabber::applySpaceFilter()
 {
+    // ROI extents. The outer passes below must iterate over the ROI size, not
+    // the full frame size: ptrOffset already starts at the ROI origin, so using
+    // the full frame width/height walks the per-column/row pointers past the
+    // ROI rows and off the end of the buffer whenever the ROI is cropped
+    // (minX/minY > 0). When the ROI spans the whole frame these reduce to the
+    // previous full-frame bounds, so behaviour is unchanged in that case.
+    const unsigned int roiWidth = static_cast<unsigned int>(maxX - minX);
+    const unsigned int roiHeight = static_cast<unsigned int>(maxY - minY);
+
     for(int filterPass=0;filterPass<2;++filterPass)
     {
 		// Pointer to first pixel of ROI
@@ -369,7 +378,7 @@ void KinectGrabber::applySpaceFilter()
 
         // Low-pass filter the values in the ROI
 		// First a horisontal pass
-        for(unsigned int x = 0; x < width; x++)
+        for(unsigned int x = 0; x < roiWidth; x++)
         {
 			// Pointer to current pixel
             float* colPtr = ptrOffset + x;
@@ -392,7 +401,7 @@ void KinectGrabber::applySpaceFilter()
         }
 
 		// then a vertical pass
-        for(unsigned int y = 0; y < height; y++)
+        for(unsigned int y = 0; y < roiHeight; y++)
         {
 			// Pointer to current pixel
 			float* rowPtr = ptrOffset + y * width;
