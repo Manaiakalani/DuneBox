@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 #include "KinectProjector.h"
 #include <sstream>
+#include <vector>
 
 using namespace ofxCSG;
 
@@ -143,10 +144,12 @@ void KinectProjector::setup(bool sdisplayGui)
     
 	kpt = new ofxKinectProjectorToolkit(projRes, kinectRes);
 
-	// finish kinectgrabber setup and start the grabber
-    kinectgrabber.setupFramefilter(gradFieldResolution, maxOffset, kinectROI, spatialFiltering, followBigChanges, numAveragingSlots);
-    kinectWorldMatrix = kinectgrabber.getWorldMatrix();
-    ofLogVerbose("KinectProjector") << "KinectProjector.setup(): kinectWorldMatrix: " << kinectWorldMatrix ;
+	// finish kinectgrabber setup and start the grabber (only for V1/V2 paths)
+    if (kinectVersion != 3) {
+        kinectgrabber.setupFramefilter(gradFieldResolution, maxOffset, kinectROI, spatialFiltering, followBigChanges, numAveragingSlots);
+        kinectWorldMatrix = kinectgrabber.getWorldMatrix();
+        ofLogVerbose("KinectProjector") << "KinectProjector.setup(): kinectWorldMatrix: " << kinectWorldMatrix ;
+    }
     
     // Setup gradient field
     setupGradientField();
@@ -165,7 +168,9 @@ void KinectProjector::setup(bool sdisplayGui)
     if (displayGui)
         setupGui();
 
-    kinectgrabber.start(); // Start the acquisition
+    if (kinectVersion != 3) {
+        kinectgrabber.start(); // Start the acquisition
+    }
 
 	updateStatusGUI();
 }
@@ -804,7 +809,7 @@ void KinectProjector::updateProjKinectAutoCalibration()
 		calibrationText = "Sea level plane estimated";
 		updateStatusGUI();
 
-        autoCalibPts = new ofPoint[10];
+		// autoCalibPts is now std::array<ofPoint,10> - no allocation needed
 		float cs = 4 * chessboardSize / 3; 
 		float css = 3 * chessboardSize / 4;
         ofPoint sc = ofPoint(projRes.x/2,projRes.y/2);
@@ -1124,8 +1129,7 @@ void KinectProjector::updateBasePlane()
         return;
     }
     ofVec4f pt;
-    ofVec3f* points;
-    points = new ofVec3f[sw*sh];
+    std::vector<ofVec3f> points(sw*sh);
     ofLogVerbose("KinectProjector") << "updateBasePlane(): Computing points in smallROI : " << sw*sh ;
     for (int x = 0; x<sw; x++){
         for (int y = 0; y<sh; y ++){
@@ -1133,7 +1137,7 @@ void KinectProjector::updateBasePlane()
         }
     }
     ofLogVerbose("KinectProjector") << "updateBasePlane(): Computing plane from points" ;
-    basePlaneEq = plane_from_points(points, sw*sh);
+    basePlaneEq = plane_from_points(points.data(), sw*sh);
 	if (basePlaneEq.x == 0 && basePlaneEq.y == 0 && basePlaneEq.z == 0)
 	{
 		ofLogVerbose("KinectProjector") << "updateBasePlane(): plane_from_points could not compute basePlane";
@@ -1163,8 +1167,7 @@ void KinectProjector::updateMaxOffset(){
         return;
     }
     ofVec4f pt;
-    ofVec3f* points;
-    points = new ofVec3f[sw*sh];
+    std::vector<ofVec3f> points(sw*sh);
     ofLogVerbose("KinectProjector") << "updateMaxOffset(): Computing points in smallROI : " << sw*sh ;
     for (int x = 0; x<sw; x++){
         for (int y = 0; y<sh; y ++){
@@ -1172,7 +1175,7 @@ void KinectProjector::updateMaxOffset(){
         }
     }
     ofLogVerbose("KinectProjector") << "updateMaxOffset(): Computing plane from points" ;
-    ofVec4f eqoff = plane_from_points(points, sw*sh);
+    ofVec4f eqoff = plane_from_points(points.data(), sw*sh);
     maxOffset = -eqoff.w-maxOffsetSafeRange;
     maxOffsetBack = maxOffset;
     // Update max Offset

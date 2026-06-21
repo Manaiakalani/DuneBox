@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "dunebox_kinect_v2_prefix.h"
 
 #include <iostream>
+#include <array>
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 #include "ofxCv.h"
@@ -356,8 +357,8 @@ private:
     float maxOffsetSafeRange;
     float maxOffsetBack;
     
-    // Autocalib points
-    ofPoint* autoCalibPts; // Center of autocalib chess boards
+    // Autocalib points (fixed size array, no dynamic allocation needed)
+    std::array<ofPoint, 10> autoCalibPts; // Center of autocalib chess boards
     int currentCalibPts;
     int trials;
     bool upframe;
