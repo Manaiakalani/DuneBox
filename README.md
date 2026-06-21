@@ -83,6 +83,12 @@ This downloads the pre-built app, creates desktop shortcuts, and you're done.
 
 Or manually: clone this repo and double-click **`run.bat`** — it auto-downloads the latest release.
 
+> **Prerequisite:** the pre-built app needs the [Microsoft Visual C++
+> Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe). If it's
+> missing, `Magic-Sand.exe` exits immediately with `0xC0000135`
+> (`STATUS_DLL_NOT_FOUND`). Install it with `winget install Microsoft.VCRedist.2015+.x64`
+> (the `setup-windows.ps1` script handles this for you).
+
 ### Put it on your desktop
 Double-click **`Install Desktop Shortcut.cmd`** once to add a **DuneBox
 (Magic-Sand C++)** icon to your desktop, then launch it with a double-click.
