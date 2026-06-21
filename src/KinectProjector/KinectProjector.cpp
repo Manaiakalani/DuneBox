@@ -38,7 +38,8 @@ projKinectCalibrationUpdated (false),
 imageStabilized (false),
 waitingForFlattenSand (false),
 drawKinectView(false),
-drawKinectColorView(true)
+drawKinectColorView(true),
+azureUnsupported(false)
 {
 	doShowROIonProjector = false;
 	applicationState = APPLICATION_STATE_SETUP;
@@ -102,19 +103,22 @@ void KinectProjector::setup(bool sdisplayGui)
     ofLogNotice("KinectProjector") << "Using kinectVersion=" << kinectVersion;
 
     if (kinectVersion == 3) {
-        kinectOpened = azureKinect.setup();
-        if (kinectOpened) {
-            ofLogNotice("KinectProjector") << "Azure Kinect / Orbbec Femto Bolt initialised";
-        }
+        // Azure Kinect / Orbbec Femto Bolt pipeline is not yet implemented.
+        // The update() loop relies on kinectgrabber channels (filtered/colored/gradient)
+        // which are not wired for Azure. Mark as unsupported to avoid silent failures.
+        ofLogError("KinectProjector") << "Azure Kinect (kinectVersion=3) is not supported in this build; set kinectVersion=1 or 2 in settings/kinectProjectorSettings.xml";
+        kinectOpened = false;
+        azureUnsupported = true;
     } else {
         // Kinect V1 and V2 both run through the unified 'kinectgrabber'. V2
         // (ofxKinectForWindows2) is only active in a build compiled with
         // DUNEBOX_USE_KINECT_FOR_WINDOWS2; otherwise the grabber stays on V1.
+        azureUnsupported = false;
         kinectgrabber.setKinectVersion(kinectVersion);
         kinectOpened = kinectgrabber.setup();
     }
 	lastKinectOpenTry = ofGetElapsedTimef(); 
-	if (!kinectOpened)
+	if (!kinectOpened && !azureUnsupported)
 	{
 		// If the kinect is not found and opened (which happens very often on Windows 10) then just go with default values for the Kinect
 		ofLogVerbose("KinectProjector") << "KinectProjector.setup(): Kinect not found - trying again later";
@@ -129,8 +133,9 @@ void KinectProjector::setup(bool sdisplayGui)
     
     // Get projector and kinect width & height
     projRes = ofVec2f(projWindow->getWidth(), projWindow->getHeight());
-    if (kinectVersion == 3) {
-        kinectRes = azureKinect.getDepthResolution();
+    // For unsupported Azure, use a sensible fallback resolution for allocation
+    if (azureUnsupported) {
+        kinectRes = ofVec2f(512, 424);  // Typical Kinect v2 resolution
     } else {
         kinectRes = kinectgrabber.getKinectSize();
     }
@@ -145,7 +150,7 @@ void KinectProjector::setup(bool sdisplayGui)
 	kpt = new ofxKinectProjectorToolkit(projRes, kinectRes);
 
 	// finish kinectgrabber setup and start the grabber (only for V1/V2 paths)
-    if (kinectVersion != 3) {
+    if (!azureUnsupported) {
         kinectgrabber.setupFramefilter(gradFieldResolution, maxOffset, kinectROI, spatialFiltering, followBigChanges, numAveragingSlots);
         kinectWorldMatrix = kinectgrabber.getWorldMatrix();
         ofLogVerbose("KinectProjector") << "KinectProjector.setup(): kinectWorldMatrix: " << kinectWorldMatrix ;
@@ -168,7 +173,7 @@ void KinectProjector::setup(bool sdisplayGui)
     if (displayGui)
         setupGui();
 
-    if (kinectVersion != 3) {
+    if (!azureUnsupported) {
         kinectgrabber.start(); // Start the acquisition
     }
 
@@ -197,6 +202,11 @@ void KinectProjector::setupGradientField(){
 }
 
 void KinectProjector::setGradFieldResolution(int sgradFieldResolution){
+    // Guard: ignore non-positive values to avoid divide-by-zero in setupGradientField()
+    if (sgradFieldResolution <= 0) {
+        ofLogWarning("KinectProjector") << "setGradFieldResolution: ignoring invalid value " << sgradFieldResolution;
+        return;
+    }
     gradFieldResolution = sgradFieldResolution;
     setupGradientField();
     kinectgrabber.performInThread([sgradFieldResolution](KinectGrabber & kg) {
@@ -279,9 +289,10 @@ void KinectProjector::update()
 //    ROIUpdated = false;
     projKinectCalibrationUpdated = false;
 
-	// Try to open the kinect every 3. second if it is not yet open
+	// Try to open the kinect every 3 seconds if it is not yet open (V1/V2 only)
+	// Azure (kinectVersion==3) is unsupported; do not attempt reconnect.
 	float TimeStamp = ofGetElapsedTimef();
-	if (!kinectOpened && TimeStamp-lastKinectOpenTry > 3)
+	if (!kinectOpened && !azureUnsupported && TimeStamp-lastKinectOpenTry > 3)
 	{
 		lastKinectOpenTry = TimeStamp;
 		kinectOpened = kinectgrabber.openKinect();
