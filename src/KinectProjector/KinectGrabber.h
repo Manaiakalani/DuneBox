@@ -20,6 +20,20 @@ General Public License for more details.
 ***********************************************************************/
 
 #pragma once
+
+// --- DuneBox: force-enable the Kinect for Windows v2 backend on Windows ---
+// The CI Windows build always vendors the Kinect for Windows SDK 2.0 and the
+// ofxKinectForWindows2 addon. Defining the flag directly in source (instead of
+// relying on the build system to inject /D into every translation unit, which
+// proved unreliable with the OpenFrameworks VS project) guarantees the v2 code
+// path is actually compiled in. macOS/Linux builds do not ship the addon, so the
+// flag stays off there. Define DUNEBOX_NO_KINECT_V2 to opt out on Windows.
+#if defined(_WIN32) && !defined(DUNEBOX_NO_KINECT_V2)
+#  ifndef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+#    define DUNEBOX_USE_KINECT_FOR_WINDOWS2 1
+#  endif
+#endif
+
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 #include "ofxCv.h"

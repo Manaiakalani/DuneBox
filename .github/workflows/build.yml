@@ -247,11 +247,22 @@ jobs:
           # doesn't, the DUNEBOX_USE_KINECT_FOR_WINDOWS2 define did not reach the
           # KinectGrabber/addon objects (e.g. a stale cached obj) -> fail loudly so we
           # never ship a v1-only binary.
+          # GUARD: verify the v2 path is actually compiled in. Two independent checks:
+          #  (1) the exe must import Kinect20.dll (the ofxKinectForWindows2 addon ->
+          #      GetDefaultKinectSensor), and
+          #  (2) the exe must contain KinectGrabber.cpp's v2-branch log string, which
+          #      only survives if the #ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2 block in
+          #      OUR source actually compiled (the addon compiles unconditionally, so
+          #      Kinect20.dll alone is NOT sufficient proof). If either is missing the
+          #      v2 path was not compiled in -> fail loudly so we never ship a v1-only exe.
           $exeBytes = [System.IO.File]::ReadAllText("$binDir\Magic-Sand.exe", [System.Text.Encoding]::ASCII)
-          if ($exeBytes -match 'Kinect20\.dll') {
-            Write-Host "OK: Magic-Sand.exe imports Kinect20.dll (Kinect v2 path compiled in)"
+          $hasImport = $exeBytes -match 'Kinect20\.dll'
+          $hasBranch = $exeBytes -match 'opening Kinect for Windows v2'
+          Write-Host "GUARD: Kinect20.dll import = $hasImport ; v2-branch string = $hasBranch"
+          if ($hasImport -and $hasBranch) {
+            Write-Host "OK: Magic-Sand.exe imports Kinect20.dll AND contains the KinectGrabber v2 branch (Kinect v2 path compiled in)"
           } else {
-            Write-Error "Magic-Sand.exe does NOT import Kinect20.dll - Kinect v2 path was NOT compiled in (stale obj?). Failing."
+            Write-Error "Kinect v2 path NOT fully compiled in (import=$hasImport branch=$hasBranch). DUNEBOX_USE_KINECT_FOR_WINDOWS2 did not take effect. Failing."
             exit 1
           }
 
