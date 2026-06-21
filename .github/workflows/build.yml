@@ -168,6 +168,14 @@ jobs:
           ($raw -split "`r?`n") | Select-String -Pattern 'Kinect20|AdditionalDependencies|AdditionalLibraryDirectories' | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
           $raw = $raw.Replace('Kinect20.lib', $kinectLib)
           Set-Content $vcx $raw
+          Write-Host "=== DIAG: PreprocessorDefinitions lines in generated vcxproj ==="
+          (Get-Content $vcx) | Select-String -Pattern 'PreprocessorDefinitions' | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
+          Write-Host "=== DIAG: configs (ItemDefinitionGroup Condition) ==="
+          (Get-Content $vcx) | Select-String -Pattern 'ItemDefinitionGroup Condition' | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
+          Write-Host "=== DIAG: does vcxproj reference the addon sources? ==="
+          (Get-Content $vcx) | Select-String -Pattern 'ofxKinectForWindows2' | Select-Object -First 6 | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
+          Write-Host "=== DIAG: KinectGrabber.cpp ClCompile entry (per-file overrides?) ==="
+          (Get-Content $vcx) | Select-String -Pattern 'KinectGrabber.cpp' | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
           if (-not (Select-String -Path $vcx -Pattern ([regex]::Escape($kinectLib)) -Quiet)) {
             Write-Error "Failed to wire absolute Kinect20.lib path into Magic-Sand.vcxproj"; exit 1
           }
