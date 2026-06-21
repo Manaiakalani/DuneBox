@@ -40,8 +40,11 @@ struct DiagnosticItem {
 
 class Diagnostics {
 public:
-    /// Run all hardware probes and populate the items list.
-    void probe();
+    /// Run all hardware probes and populate the items list. The Kinect status
+    /// is supplied by the caller (which owns the real sensor handle) so the
+    /// overlay reports the configured Kinect version (v1/v2) correctly instead
+    /// of probing only the legacy v1 API.
+    void probe(int kinectVersion, bool kinectConnected);
 
     /// Draw the diagnostics overlay centred on the current window.
     void draw();
@@ -61,6 +64,7 @@ public:
 private:
     std::vector<DiagnosticItem> items;
     float elapsed  = 0.0f;
+    float startTime = -1.0f; // wall-clock baseline, captured on first update()
     float duration = 3.0f;   // auto-dismiss after 3 seconds
     bool  active   = true;
     bool  keyDismissed = false;

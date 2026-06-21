@@ -83,7 +83,14 @@ void CMapGameController::setup(std::shared_ptr<KinectProjector> const& k)
 		std::string tfname = ofToDataPath(DataBaseDir + "Scores/" + referenceMapHandler.ReferenceMaps[i] + "_scores.xml");
 		scoreFileNames[i] = tfname;
 
-		scoreTrackers[i].LoadScoresXML(scoreFileNames[i]);
+		// Hi-score files only exist once a game has been played and saved.
+		// Skip loading (and the resulting "file not found" warning spam) when
+		// the file is absent — the tracker stays empty, exactly as it would
+		// after a failed load.
+		if (ofFile::doesFileExist(scoreFileNames[i]))
+		{
+			scoreTrackers[i].LoadScoresXML(scoreFileNames[i]);
+		}
 	}
 }
 
