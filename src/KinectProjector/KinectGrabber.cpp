@@ -61,6 +61,14 @@ bool KinectGrabber::setup(){
 		// Kinect for Windows v2 via the official Microsoft SDK.
 		ofLogNotice("kinectGrabber") << "setup(): opening Kinect for Windows v2 (ofxKinectForWindows2)";
 		kinectV2Device.open();
+		if (!kinectV2Device.isOpen()) {
+			ofLogError("kinectGrabber") << "Kinect v2 could not be opened — it may be in use by another app "
+				"(close the Python DuneBox-sandcam or any other Magic-Sand instance) or disconnected.";
+			kinectV2Depth = nullptr;
+			kinectV2Color = nullptr;
+			kinectOpened = false;
+			return false;
+		}
 		kinectV2Depth = kinectV2Device.initDepthSource();
 		kinectV2Color = kinectV2Device.initColorSource();
 		kinectV2Device.setUseTextures(false);
@@ -95,7 +103,28 @@ bool KinectGrabber::openKinect() {
 		if (!kinectV2Device.isOpen()) {
 			kinectV2Device.open();
 		}
-		kinectOpened = kinectV2Device.isOpen();
+		if (!kinectV2Device.isOpen()) {
+			ofLogError("kinectGrabber") << "openKinect(): Kinect v2 device is not open "
+				"(possibly in use by another app or disconnected).";
+			kinectOpened = false;
+			return false;
+		}
+		// Ensure depth/color sources exist. A prior failed setup() may have left
+		// these null; a retry that only reopens the device would otherwise report
+		// opened==true while no frames ever flow.
+		if (kinectV2Depth == nullptr) {
+			kinectV2Depth = kinectV2Device.initDepthSource();
+		}
+		if (kinectV2Color == nullptr) {
+			kinectV2Color = kinectV2Device.initColorSource();
+		}
+		if (kinectV2Depth == nullptr) {
+			ofLogError("kinectGrabber") << "openKinect(): Kinect v2 depth source could not be initialized; "
+				"no depth frames will flow.";
+			kinectOpened = false;
+			return false;
+		}
+		kinectOpened = true;
 		if (kinectOpened) {
 			// Warm up the sensor: pump the device until the first depth frame
 			// arrives so the Kinect v2 depth-to-world ray table (queried by
