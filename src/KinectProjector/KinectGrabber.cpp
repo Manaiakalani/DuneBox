@@ -60,10 +60,27 @@ bool KinectGrabber::setup(){
 	if (kinectVersion == 2) {
 		// Kinect for Windows v2 via the official Microsoft SDK.
 		ofLogNotice("kinectGrabber") << "setup(): opening Kinect for Windows v2 (ofxKinectForWindows2)";
+		// The Kinect v2 depth frame geometry is fixed (512x424). Set the
+		// dimensions and allocate the frame buffers UP FRONT, before attempting
+		// to open the device. This keeps the grabber object in a valid state
+		// even if the device is currently busy/unavailable: getKinectSize()
+		// returns the correct 512x424 (so the projector's FBOs/frame-filter are
+		// sized correctly) and the 3s reconnect loop (openKinect()) can recover
+		// later once another app releases the exclusive sensor. Without this, a
+		// failed initial open left width/height uninitialized and the projector
+		// allocated FBOs/buffers with garbage dimensions.
+		width = 512;   // Kinect v2 depth frame is fixed at 512x424
+		height = 424;
+		kinectDepthImage.allocate(width, height, 1);
+		filteredframe.allocate(width, height, 1);
+		kinectColorImage.allocate(width, height);
+		kinectColorImage.setUseTexture(false);
+		kinectV2Device.setUseTextures(false);
 		kinectV2Device.open();
 		if (!kinectV2Device.isOpen()) {
 			ofLogError("kinectGrabber") << "Kinect v2 could not be opened — it may be in use by another app "
-				"(close the Python DuneBox-sandcam or any other Magic-Sand instance) or disconnected.";
+				"(close the Python DuneBox-sandcam or any other Magic-Sand instance) or disconnected. "
+				"Will keep retrying.";
 			kinectV2Depth = nullptr;
 			kinectV2Color = nullptr;
 			kinectOpened = false;
@@ -71,13 +88,6 @@ bool KinectGrabber::setup(){
 		}
 		kinectV2Depth = kinectV2Device.initDepthSource();
 		kinectV2Color = kinectV2Device.initColorSource();
-		kinectV2Device.setUseTextures(false);
-		width = 512;   // Kinect v2 depth frame is fixed at 512x424
-		height = 424;
-		kinectDepthImage.allocate(width, height, 1);
-		filteredframe.allocate(width, height, 1);
-		kinectColorImage.allocate(width, height);
-		kinectColorImage.setUseTexture(false);
 		return openKinect();
 	}
 #endif
