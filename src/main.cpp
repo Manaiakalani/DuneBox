@@ -99,9 +99,19 @@ int main() {
 	mainWindow->setWindowPosition(ofGetScreenWidth() / 2 - settings.getWidth() / 2, ofGetScreenHeight() / 2 - settings.getHeight() / 2);
     mainWindow->setWindowShape(settings.getWidth(), settings.getHeight());
     
-	setWindowDimensions(settings, 1);
+	bool hasSecondMonitor = setWindowDimensions(settings, 1);
 	settings.resizable = false;
-	settings.decorated = false;
+	if (hasSecondMonitor) {
+		// Real projector monitor present: borderless full-screen on it.
+		settings.decorated = false;
+	} else {
+		// Single-monitor setup: make the projector window an obvious,
+		// draggable, decorated window offset from the main GUI so it does
+		// not overlay it as a confusing blank window.
+		settings.decorated = true;
+		settings.title = "DuneBox Projector Output (drag to your projector)";
+		settings.setPosition(ofVec2f(60, 60));
+	}
 	settings.shareContextWith = mainWindow;
 	shared_ptr<ofAppBaseWindow> secondWindow = ofCreateWindow(settings);
 	secondWindow->setVerticalSync(false);

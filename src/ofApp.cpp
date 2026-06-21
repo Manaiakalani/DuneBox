@@ -222,6 +222,21 @@ void ofApp::draw()
 		sandSurfaceRenderer->drawMainWindow(x, y, w, h);//400, 20, 400, 300);
 		boidGameController.drawMainWindow(x, y, w, h);
 	}
+	else
+	{
+		// Pre-calibration: nothing is rendered into the main view yet, so the
+		// window would otherwise be an unexplained black screen. Draw a friendly
+		// centered hint telling the user this is the setup phase.
+		std::string hint =
+			"DuneBox - setup phase\n"
+			"The sand topography appears here after calibration.\n"
+			"Use the GUI to calibrate the Kinect + projector.";
+		int hx = ofGetWidth() / 2 - 200;
+		int hy = ofGetHeight() / 2 - 20;
+		ofSetColor(255);
+		ofDrawBitmapString(hint, hx, hy);
+		ofSetColor(255);
+	}
 
 	kinectProjector->drawMainWindow(x, y, w, h);
 
