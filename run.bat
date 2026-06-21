@@ -1,5 +1,5 @@
 @echo off
-:: DuneBox Launcher — runs the pre-built exe, or fetches it automatically.
+:: DuneBox Launcher - runs the pre-built exe, or fetches it automatically.
 :: Order: local exe -> published release -> latest successful CI artifact.
 setlocal enabledelayedexpansion
 title DuneBox AR Sandbox
@@ -61,7 +61,11 @@ exit /b 1
 :extract
 echo  Extracting to bin\...
 if not exist "%BINDIR%" mkdir "%BINDIR%"
-powershell -NoProfile -Command "Expand-Archive -Path '%ZIPFILE%' -DestinationPath '%BINDIR%' -Force"
+:: Expand, then strip Mark-of-the-Web from every extracted file. Downloaded
+:: zips tag their contents with MOTW, which Smart App Control / SmartScreen use
+:: to block unsigned binaries (the app is an unsigned OpenFrameworks build).
+:: Unblock-File removes that tag so the freshly-downloaded exe launches normally.
+powershell -NoProfile -Command "Expand-Archive -Path '%ZIPFILE%' -DestinationPath '%BINDIR%' -Force; Get-ChildItem -LiteralPath '%BINDIR%' -Recurse -File | Unblock-File"
 del "%ZIPFILE%" >nul 2>&1
 if not exist "%EXE%" (
     echo  Extract failed - Magic-Sand.exe not found.
@@ -70,7 +74,25 @@ if not exist "%EXE%" (
 )
 
 :run
+call :check_v2_runtime
 echo  Starting DuneBox...
 cd /d "%BINDIR%"
 start "" "Magic-Sand.exe"
 exit /b 0
+
+:check_v2_runtime
+:: If configured for Kinect v2, verify the Kinect v2 runtime is installed.
+:: Kinect20.dll ships in System32 via the "Kinect for Windows Runtime 2.0"
+:: installer, not alongside the app. Non-fatal: just warn so a missing runtime
+:: is an obvious explanation for "no sensor detected".
+set "SETTINGS=%BINDIR%\data\settings\kinectProjectorSettings.xml"
+if not exist "%SETTINGS%" goto :eof
+findstr /i /c:"<kinectVersion>2</kinectVersion>" "%SETTINGS%" >nul 2>&1
+if errorlevel 1 goto :eof
+if exist "%WINDIR%\System32\Kinect20.dll" goto :eof
+echo.
+echo  [warning] kinectVersion=2 but the Kinect v2 runtime was not found.
+echo            Install "Kinect for Windows Runtime 2.0":
+echo            https://www.microsoft.com/download/details.aspx?id=44559
+echo.
+goto :eof
