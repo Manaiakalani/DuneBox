@@ -171,4 +171,7 @@ private:
 
     // --- Workgroup dimensions ---
     int groupsX, groupsY;
+
+    // --- FBO for depth→bathymetry format conversion (R32F → RGBA32F) ---
+    ofFbo depthConversionFbo;
 };
