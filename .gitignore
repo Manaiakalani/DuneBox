@@ -19,3 +19,7 @@ obj/
 *.user
 ipch/
 .vs/
+bin/Magic-Sand.exp
+bin/Magic-Sand.lib
+bin/*.exp
+bin/*.lib
