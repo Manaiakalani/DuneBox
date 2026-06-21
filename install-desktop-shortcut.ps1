@@ -9,7 +9,7 @@
     the GitHub release / latest successful CI build if it isn't present yet).
 
     If you also have the DuneBox-sandcam repo checked out next to this one, its
-    install-desktop-shortcuts.ps1 is the preferred entry point — it sets up both
+    install-desktop-shortcuts.ps1 is the preferred entry point - it sets up both
     the primary "DuneBox" icon and this C++ one together.
 
 .EXAMPLE
@@ -33,7 +33,7 @@ $linkPath = Join-Path $Desktop 'DuneBox (Magic-Sand C++).lnk'
 $sc = $Shell.CreateShortcut($linkPath)
 $sc.TargetPath       = $RunBat
 $sc.WorkingDirectory = $RepoRoot
-$sc.WindowStyle      = 7          # launch the console minimized — stays clean
+$sc.WindowStyle      = 7          # launch the console minimized - stays clean
 $sc.Description      = 'DuneBox Magic-Sand C++ renderer'
 if (Test-Path $IconPath) { $sc.IconLocation = "$IconPath,0" }
 $sc.Save()
