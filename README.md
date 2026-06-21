@@ -83,6 +83,12 @@ This downloads the pre-built app, creates desktop shortcuts, and you're done.
 
 Or manually: clone this repo and double-click **`run.bat`** — it auto-downloads the latest release.
 
+### Put it on your desktop
+Double-click **`Install Desktop Shortcut.cmd`** once to add a **DuneBox
+(Magic-Sand C++)** icon to your desktop, then launch it with a double-click.
+The installer is safe to re-run. (If you also have the `DuneBox-sandcam` repo
+checked out, its `Install Desktop Shortcuts.cmd` sets up both apps at once.)
+
 ### Build from source (if you want to modify the code)
 This repo ships **no IDE project files** — generate them for your platform with
 OpenFrameworks' projectGenerator (the committed app is otherwise OF-0.9 stale).
