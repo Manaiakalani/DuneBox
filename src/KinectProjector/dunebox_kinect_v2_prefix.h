@@ -21,6 +21,17 @@ It does two things:
 ***********************************************************************/
 #pragma once
 
+// MSVC + C++17 defines std::byte, and OpenFrameworks/ofxDatGui bring
+// `using namespace std;` into scope. The Kinect v2 COM headers (objidl.h ->
+// rpcndr.h / wtypesbase.h, via Kinect.h -> <windows.h>) also declare a global
+// `byte`, which then becomes an "ambiguous symbol" (C2872). Disabling std::byte
+// for the translation units that pull in the Kinect COM headers resolves it.
+// Must be defined before any STL/Windows header is included (this prefix header
+// is the very first include in those TUs).
+#if defined(_WIN32) && !defined(_HAS_STD_BYTE)
+#  define _HAS_STD_BYTE 0
+#endif
+
 #if defined(_WIN32) && !defined(DUNEBOX_NO_KINECT_V2)
 #  ifndef DUNEBOX_USE_KINECT_FOR_WINDOWS2
 #    define DUNEBOX_USE_KINECT_FOR_WINDOWS2 1
