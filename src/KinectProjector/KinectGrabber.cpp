@@ -49,7 +49,7 @@ void KinectGrabber::stop(){
 
 bool KinectGrabber::setup(){
 	// settings and defaults
-	storedframes = 0;
+	storedframes.store(0, std::memory_order_relaxed);
 	ROIAverageValue = 0;
 	setToGlobalAvg = 0;
 	setToLocalAvg = 0;
@@ -151,6 +151,12 @@ void KinectGrabber::setupFramefilter(int sgradFieldresolution, float newMaxOffse
 }
 
 void KinectGrabber::initiateBuffers(void){
+	// Guard against double-allocation (e.g. on reconnect calling setupFramefilter again)
+	if (bufferInitiated) {
+		resetBuffers();  // resetBuffers() will free and re-init
+		return;
+	}
+
 	filteredframe.set(0);
 
     averagingBuffer=new float[numAveragingSlots*height*width];
@@ -186,7 +192,7 @@ void KinectGrabber::initiateBuffers(void){
     
     bufferInitiated = true;
     currentInitFrame = 0;
-    firstImageReady = false;
+    firstImageReady.store(false, std::memory_order_release);
 }
 
 void KinectGrabber::resetBuffers(void){
@@ -237,7 +243,7 @@ void KinectGrabber::threadedFunction() {
                 kinectColorImage.setFromPixels(kinect.getPixels());
             }
         }
-        if (storedframes == 0)
+        if (storedframes.load(std::memory_order_acquire) == 0)
         {
             // Send value copies of all frame data; the grabber retains and keeps
             // mutating its own buffers on the next iteration. Using std::move
@@ -245,9 +251,7 @@ void KinectGrabber::threadedFunction() {
             filtered.send(ofFloatPixels(filteredframe));
 			gradient.send(std::vector<ofVec2f>(gradField, gradField + gradFieldcols * gradFieldrows));
             colored.send(ofPixels(kinectColorImage.getPixels()));
-            lock();
-            storedframes += 1;
-            unlock();
+            storedframes.fetch_add(1, std::memory_order_release);
         }
         
     }
@@ -293,6 +297,11 @@ void KinectGrabber::filter()
 			}
 			inputFramePtr += width - maxX;
 			filteredFramePtr += width - maxX;
+		}
+
+		// Mark image as stabilized on first valid frame (no averaging warmup needed)
+		if (!firstImageReady.load(std::memory_order_relaxed)) {
+			firstImageReady.store(true, std::memory_order_release);
 		}
 
 		if (doInPaint)
@@ -389,10 +398,10 @@ void KinectGrabber::filter()
         if(++averagingSlotIndex==numAveragingSlots)
             averagingSlotIndex=0;
         
-        if (!firstImageReady){
+        if (!firstImageReady.load(std::memory_order_relaxed)){
             currentInitFrame++;
             if(currentInitFrame > minInitFrame)
-                firstImageReady = true;
+                firstImageReady.store(true, std::memory_order_release);
         }
         
 		if (doInPaint)

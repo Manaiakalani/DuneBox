@@ -218,6 +218,10 @@ void KinectProjector::setGradFieldResolution(int sgradFieldResolution){
 // else it would be convenient just to call it in every update
 void KinectProjector::updateStatusGUI()
 {
+	// Guard against calls when GUI wasn't initialized (displayGui=false)
+	if (!displayGui)
+		return;
+
 	if (kinectOpened)
 	{
 		StatusGUI->getLabel("Kinect Status")->setLabel("Kinect running");

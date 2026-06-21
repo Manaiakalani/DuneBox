@@ -29,6 +29,7 @@ General Public License for more details.
 #include "ofxOpenCv.h"
 #include "ofxCv.h"
 #include "ofxKinect.h"
+#include <atomic>
 
 #ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
 // Kinect for Windows v2 (official Microsoft SDK) backend. winsock2.h was already
@@ -64,11 +65,11 @@ public:
     void setGradFieldResolution(int sgradFieldresolution);
     
     void decStoredframes(){
-        storedframes -= 1;
+        storedframes.fetch_sub(1, std::memory_order_release);
     }
     
     bool isImageStabilized(){
-        return firstImageReady;
+        return firstImageReady.load(std::memory_order_acquire);
     }
     
     bool isFrameNew(){
@@ -139,8 +140,8 @@ private:
 
 	bool newFrame;
     bool bufferInitiated;
-    bool firstImageReady;
-    int storedframes;
+    std::atomic<bool> firstImageReady;
+    std::atomic<int> storedframes;
     
     // Thread lambda functions (actions)
 	vector<std::function<void(KinectGrabber&)> > actions;
