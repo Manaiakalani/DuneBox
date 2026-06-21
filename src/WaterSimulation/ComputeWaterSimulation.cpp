@@ -448,7 +448,11 @@ void ComputeWaterSimulation::dispatchWaterRender() {
     glBindImageTexture(2, outputTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 
     glDispatchCompute(groupsX, groupsY, 1);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    // outputTex is written here via image store (binding 2) and then sampled as a
+    // regular texture in draw() (outputOfTex). Image-access visibility alone is not
+    // enough for a subsequent texture fetch, so also flush the texture-fetch barrier
+    // to avoid sampling stale/partial results.
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
 }
 
 // ─── Draw ───────────────────────────────────────────────────────────
