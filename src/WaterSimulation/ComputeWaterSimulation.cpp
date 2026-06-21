@@ -291,9 +291,10 @@ void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
             bathymetryDirty = false;
             currentBathymetry = newBathy;
         } else {
+            // Set currentBathymetry BEFORE dispatchBathymetryUpdate so it reads correct old/new indices
+            currentBathymetry = newBathy;
             // Run bathymetry update to adjust water heights
             dispatchBathymetryUpdate();
-            currentBathymetry = newBathy;
         }
     }
 
@@ -372,7 +373,7 @@ void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
 // ─── Dispatch helpers ───────────────────────────────────────────────
 
 void ComputeWaterSimulation::dispatchBathymetryUpdate() {
-    int newBathy = currentBathymetry; // already set to new
+    int newBathy = currentBathymetry; // currentBathymetry was set to new before this call
     int oldBathy = 1 - currentBathymetry;
     int newQ = 1 - currentQuantity;
 
