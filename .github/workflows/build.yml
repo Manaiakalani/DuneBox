@@ -197,6 +197,11 @@ jobs:
         shell: cmd
         run: |
           cd openFrameworks\apps\myApps\Magic-Sand
+          rem Delete cached app/addon object files so EVERY source recompiles with the
+          rem injected DUNEBOX_USE_KINECT_FOR_WINDOWS2 define. The OF core lib is cached
+          rem separately (openFrameworksCompiled) and is NOT affected by this.
+          if exist obj rmdir /s /q obj
+          if exist bin\Magic-Sand.exe del /q bin\Magic-Sand.exe
           msbuild Magic-Sand.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143 /m
 
       - name: Package release
@@ -222,6 +227,19 @@ jobs:
           Get-ChildItem $binDir | Select-Object Name, Length | Format-Table -AutoSize | Out-String | Write-Host
           if (-not (Test-Path "$binDir\Magic-Sand.exe")) {
             Write-Error "Build did not produce Magic-Sand.exe"; exit 1
+          }
+
+          # GUARD: verify the v2 path is actually compiled in. The exe MUST import
+          # Kinect20.dll (via ofxKinectForWindows2 -> GetDefaultKinectSensor). If it
+          # doesn't, the DUNEBOX_USE_KINECT_FOR_WINDOWS2 define did not reach the
+          # KinectGrabber/addon objects (e.g. a stale cached obj) -> fail loudly so we
+          # never ship a v1-only binary.
+          $exeBytes = [System.IO.File]::ReadAllText("$binDir\Magic-Sand.exe", [System.Text.Encoding]::ASCII)
+          if ($exeBytes -match 'Kinect20\.dll') {
+            Write-Host "OK: Magic-Sand.exe imports Kinect20.dll (Kinect v2 path compiled in)"
+          } else {
+            Write-Error "Magic-Sand.exe does NOT import Kinect20.dll - Kinect v2 path was NOT compiled in (stale obj?). Failing."
+            exit 1
           }
 
           # Create zip
