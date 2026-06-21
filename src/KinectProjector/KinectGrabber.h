@@ -21,18 +21,9 @@ General Public License for more details.
 
 #pragma once
 
-// --- DuneBox: force-enable the Kinect for Windows v2 backend on Windows ---
-// The CI Windows build always vendors the Kinect for Windows SDK 2.0 and the
-// ofxKinectForWindows2 addon. Defining the flag directly in source (instead of
-// relying on the build system to inject /D into every translation unit, which
-// proved unreliable with the OpenFrameworks VS project) guarantees the v2 code
-// path is actually compiled in. macOS/Linux builds do not ship the addon, so the
-// flag stays off there. Define DUNEBOX_NO_KINECT_V2 to opt out on Windows.
-#if defined(_WIN32) && !defined(DUNEBOX_NO_KINECT_V2)
-#  ifndef DUNEBOX_USE_KINECT_FOR_WINDOWS2
-#    define DUNEBOX_USE_KINECT_FOR_WINDOWS2 1
-#  endif
-#endif
+// Force-enable the Kinect v2 backend and win the winsock1/2 include ordering.
+// MUST come before ofMain.h (which transitively includes <windows.h>).
+#include "dunebox_kinect_v2_prefix.h"
 
 #include "ofMain.h"
 #include "ofxOpenCv.h"
@@ -40,13 +31,8 @@ General Public License for more details.
 #include "ofxKinect.h"
 
 #ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
-// Kinect for Windows v2 (official Microsoft SDK) backend. Kinect.h pulls in
-// <windows.h>, which by default includes the legacy <winsock.h>; make sure the
-// modern <winsock2.h> is seen first so it does not clash with the rest of the
-// app's networking headers (Bridge uses winsock2).
-#ifdef TARGET_WIN32
-#include <winsock2.h>
-#endif
+// Kinect for Windows v2 (official Microsoft SDK) backend. winsock2.h was already
+// included above (before ofMain.h) to avoid the winsock1/2 clash.
 #include "ofxKinectForWindows2.h"
 #endif
 

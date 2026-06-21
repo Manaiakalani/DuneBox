@@ -24,6 +24,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #ifndef __GreatSand__KinectProjector__
 #define __GreatSand__KinectProjector__
 
+// Force-enable the Kinect v2 backend and win the winsock1/2 include ordering.
+// MUST come before ofMain.h (which transitively includes <windows.h>).
+#include "dunebox_kinect_v2_prefix.h"
+
 #include <iostream>
 #include "ofMain.h"
 #include "ofxOpenCv.h"
