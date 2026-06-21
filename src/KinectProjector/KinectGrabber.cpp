@@ -239,11 +239,12 @@ void KinectGrabber::threadedFunction() {
         }
         if (storedframes == 0)
         {
-            filtered.send(std::move(filteredframe));
-			// Send a value copy of the gradient field; the grabber retains and
-			// keeps mutating its own gradField buffer on the next iteration.
+            // Send value copies of all frame data; the grabber retains and keeps
+            // mutating its own buffers on the next iteration. Using std::move
+            // would empty the buffers and cause filter() to write to null data.
+            filtered.send(ofFloatPixels(filteredframe));
 			gradient.send(std::vector<ofVec2f>(gradField, gradField + gradFieldcols * gradFieldrows));
-            colored.send(std::move(kinectColorImage.getPixels()));
+            colored.send(ofPixels(kinectColorImage.getPixels()));
             lock();
             storedframes += 1;
             unlock();
@@ -677,6 +678,7 @@ void KinectGrabber::setAveragingSlotsNumber(int snumAveragingSlots){
 }
 
 void KinectGrabber::setGradFieldResolution(int sgradFieldresolution){
+    if (sgradFieldresolution <= 0) return; // Guard against invalid resolution
     if (bufferInitiated){
         bufferInitiated = false;
         delete[] averagingBuffer;
@@ -685,6 +687,9 @@ void KinectGrabber::setGradFieldResolution(int sgradFieldresolution){
         delete[] gradField;
     }
     gradFieldresolution = sgradFieldresolution;
+    // Recompute grid dimensions to match the new resolution (see setupFramefilter)
+    gradFieldcols = width / gradFieldresolution;
+    gradFieldrows = height / gradFieldresolution;
     initiateBuffers();
 }
 
