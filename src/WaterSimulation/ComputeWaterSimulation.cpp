@@ -226,6 +226,15 @@ void ComputeWaterSimulation::setup(int width, int height) {
     outputOfTex.texData.glInternalFormat = GL_RGBA8;
     outputOfTex.texData.bAllocated = true;
 
+    // Allocate FBO for depth→bathymetry format conversion (R32F → RGBA32F).
+    // glCopyImageSubData requires compatible texel formats; since the depth
+    // texture is single-channel (R32F) and bathymetryTex is RGBA32F, we render
+    // through this FBO to perform the conversion.
+    depthConversionFbo.allocate(simWidth, simHeight, GL_RGBA32F);
+    depthConversionFbo.begin();
+    ofClear(0, 0, 0, 0);
+    depthConversionFbo.end();
+
     currentQuantity = 0;
     currentBathymetry = 0;
     bathymetryDirty = true;
@@ -243,14 +252,21 @@ void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
     if (!enabled || !initialized) return;
 
     // Step 0: Copy depth texture into bathymetry
+    // The depth texture is single-channel (R32F from ofxCvFloatImage) while
+    // bathymetryTex is RGBA32F. glCopyImageSubData requires compatible formats,
+    // so we render through an FBO to perform the conversion.
     {
         int newBathy = 1 - currentBathymetry;
 
-        // Copy depthTexture data into bathymetryTex[newBathy]
-        // Use glCopyImageSubData if available, otherwise use an FBO blit
-        GLuint srcTex = depthTexture.getTextureData().textureID;
+        // Draw depth texture into the conversion FBO (R32F → RGBA32F)
+        depthConversionFbo.begin();
+        ofClear(0, 0, 0, 0);
+        depthTexture.draw(0, 0, simWidth, simHeight);
+        depthConversionFbo.end();
 
-        // Bind source and copy via PBO-less path: read from depthTexture, write to bathymetry
+        // Now copy the converted RGBA32F texture to bathymetry (format-compatible)
+        GLuint srcTex = depthConversionFbo.getTexture().getTextureData().textureID;
+
         glCopyImageSubData(
             srcTex, GL_TEXTURE_2D, 0, 0, 0, 0,
             bathymetryTex[newBathy], GL_TEXTURE_2D, 0, 0, 0, 0,
