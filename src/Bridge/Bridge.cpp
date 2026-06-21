@@ -255,6 +255,13 @@ void Bridge::readIncoming() {
             }
 
             std::lock_guard<std::mutex> lock(recvMtx);
+            // Bound the queue so a peer that floods valid messages faster than
+            // poll() drains them cannot grow memory without limit.
+            static const size_t kMaxRecvQueue = 1024;
+            if (recvQueue.size() >= kMaxRecvQueue) {
+                recvQueue.erase(recvQueue.begin()); // drop oldest
+                ofLogWarning("Bridge") << "recvQueue full - dropping oldest message";
+            }
             recvQueue.push_back(std::move(obj));
         } catch (const std::exception& e) {
             ofLogWarning("Bridge") << "Invalid JSON: " << line.substr(0, 120);

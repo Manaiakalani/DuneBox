@@ -90,6 +90,11 @@ bool KinectGrabber::setup(){
 bool KinectGrabber::openKinect() {
 #ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
 	if (kinectVersion == 2) {
+		// (Re)open if not currently open so a retry after a transient failure
+		// can recover instead of leaving the device permanently closed.
+		if (!kinectV2Device.isOpen()) {
+			kinectV2Device.open();
+		}
 		kinectOpened = kinectV2Device.isOpen();
 		if (kinectOpened) {
 			// Warm up the sensor: pump the device until the first depth frame
@@ -207,12 +212,18 @@ void KinectGrabber::threadedFunction() {
 #ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
         if (kinectVersion == 2) {
             kinectV2Device.update();
+            // Only consume the depth frame when the depth source actually
+            // delivered a full 512x424 frame; a color-only/empty update would
+            // otherwise make filter() read invalid/short pixel memory.
             if (kinectV2Device.isFrameNew() && kinectV2Depth) {
-                kinectDepthImage = kinectV2Depth->getPixels(); // uint16 depth in mm, 512x424
-                filter();
-                filteredframe.setImageType(OF_IMAGE_GRAYSCALE);
-                updateGradientField();
-                updateKinectV2ColorInDepthFrame();
+                const auto & depthPixels = kinectV2Depth->getPixels(); // uint16 mm, 512x424
+                if (depthPixels.size() == width * height) {
+                    kinectDepthImage = depthPixels;
+                    filter();
+                    filteredframe.setImageType(OF_IMAGE_GRAYSCALE);
+                    updateGradientField();
+                    updateKinectV2ColorInDepthFrame();
+                }
             }
         } else
 #endif
@@ -229,7 +240,9 @@ void KinectGrabber::threadedFunction() {
         if (storedframes == 0)
         {
             filtered.send(std::move(filteredframe));
-			gradient.send(std::move(gradField));
+			// Send a value copy of the gradient field; the grabber retains and
+			// keeps mutating its own gradField buffer on the next iteration.
+			gradient.send(std::vector<ofVec2f>(gradField, gradField + gradFieldcols * gradFieldrows));
             colored.send(std::move(kinectColorImage.getPixels()));
             lock();
             storedframes += 1;

@@ -114,7 +114,11 @@ public:
 
 	ofThreadChannel<ofFloatPixels> filtered;
 	ofThreadChannel<ofPixels> colored;
-	ofThreadChannel<ofVec2f*> gradient;
+	// Carry the gradient field by value (a copy per frame) rather than a raw
+	// pointer: the grabber thread keeps mutating its own gradField buffer every
+	// frame, so handing the consumer the live pointer was a data race (and the
+	// consumer leaked/aliased its own buffer). A moved std::vector is safe.
+	ofThreadChannel<std::vector<ofVec2f>> gradient;
     
 private:
 	void threadedFunction() override;
