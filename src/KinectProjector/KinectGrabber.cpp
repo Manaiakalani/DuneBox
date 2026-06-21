@@ -22,6 +22,20 @@ General Public License for more details.
 #include "KinectGrabber.h"
 #include "ofConstants.h"
 
+// --- DuneBox build diagnostic: report the effective macro state of the Kinect v2
+// flag at the point KinectGrabber.cpp is compiled. Printed to the build log via
+// /showIncludes-style #pragma message so CI can confirm the v2 branch is active.
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+#pragma message("DUNEBOX_DIAG: DUNEBOX_USE_KINECT_FOR_WINDOWS2 is DEFINED in KinectGrabber.cpp (v2 branch ACTIVE)")
+#else
+#pragma message("DUNEBOX_DIAG: DUNEBOX_USE_KINECT_FOR_WINDOWS2 is NOT defined in KinectGrabber.cpp (v2 branch INACTIVE)")
+#endif
+#ifdef _WIN32
+#pragma message("DUNEBOX_DIAG: _WIN32 is defined")
+#else
+#pragma message("DUNEBOX_DIAG: _WIN32 is NOT defined")
+#endif
+
 KinectGrabber::KinectGrabber()
 :newFrame(true),
 bufferInitiated(false),
