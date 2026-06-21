@@ -230,7 +230,20 @@ void ComputeWaterSimulation::setup(int width, int height) {
     // glCopyImageSubData requires compatible texel formats; since the depth
     // texture is single-channel (R32F) and bathymetryTex is RGBA32F, we render
     // through this FBO to perform the conversion.
-    depthConversionFbo.allocate(simWidth, simHeight, GL_RGBA32F);
+    // Force GL_TEXTURE_2D: openFrameworks defaults to ARB rectangle textures,
+    // which would make the FBO texture GL_TEXTURE_RECTANGLE and mismatch the
+    // GL_TEXTURE_2D bathymetry target passed to glCopyImageSubData below.
+    {
+        ofFboSettings fboSettings;
+        fboSettings.width = simWidth;
+        fboSettings.height = simHeight;
+        fboSettings.internalformat = GL_RGBA32F;
+        fboSettings.textureTarget = GL_TEXTURE_2D;
+        fboSettings.numColorbuffers = 1;
+        fboSettings.useDepth = false;
+        fboSettings.useStencil = false;
+        depthConversionFbo.allocate(fboSettings);
+    }
     depthConversionFbo.begin();
     ofClear(0, 0, 0, 0);
     depthConversionFbo.end();
@@ -266,9 +279,10 @@ void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
 
         // Now copy the converted RGBA32F texture to bathymetry (format-compatible)
         GLuint srcTex = depthConversionFbo.getTexture().getTextureData().textureID;
+        GLenum srcTarget = depthConversionFbo.getTexture().getTextureData().textureTarget;
 
         glCopyImageSubData(
-            srcTex, GL_TEXTURE_2D, 0, 0, 0, 0,
+            srcTex, srcTarget, 0, 0, 0, 0,
             bathymetryTex[newBathy], GL_TEXTURE_2D, 0, 0, 0, 0,
             simWidth, simHeight, 1
         );
