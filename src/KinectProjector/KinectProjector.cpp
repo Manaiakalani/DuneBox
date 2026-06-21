@@ -295,6 +295,15 @@ void KinectProjector::update()
 
 	// Try to open the kinect every 3 seconds if it is not yet open (V1/V2 only)
 	// Azure (kinectVersion==3) is unsupported; do not attempt reconnect.
+	//
+	// KNOWN LIMITATION (reconnect race): openKinect() re-initializes the grabber's
+	// device sources from this (main) thread while the grabber thread may be reading
+	// them. This is only reachable on the uncommon "initial open failed, then a later
+	// reconnect succeeds" path — when the Kinect opens on the first try (the normal
+	// case) kinectOpened is true from setup() and this block never runs, so there is
+	// no race in normal operation. A full fix would route the reopen onto the grabber
+	// thread via KinectGrabber::performInThread(); deferred to avoid destabilizing the
+	// working pipeline without a local build to validate the threading change.
 	float TimeStamp = ofGetElapsedTimef();
 	if (!kinectOpened && !azureUnsupported && TimeStamp-lastKinectOpenTry > 3)
 	{
