@@ -163,7 +163,11 @@ jobs:
           # 'struct timeval'). The winsock 1/2 conflict is instead handled per-file:
           # Bridge.cpp includes <winsock2.h> first and Bridge.h is socket-header-free.
           $raw = Get-Content $vcx -Raw
-          $raw = $raw -replace '<PreprocessorDefinitions>', '<PreprocessorDefinitions>_HAS_AUTO_PTR_ETC=1;DUNEBOX_USE_KINECT_FOR_WINDOWS2;'
+          # _HAS_STD_BYTE=0: the Kinect v2 COM headers (objidl.h/rpcndr.h via
+          # windows.h) declare a global 'byte' that is ambiguous with C++17
+          # std::byte (C2872) in the addon's own translation units. Disable
+          # std::byte project-wide on Windows to resolve it everywhere.
+          $raw = $raw -replace '<PreprocessorDefinitions>', '<PreprocessorDefinitions>_HAS_AUTO_PTR_ETC=1;_HAS_STD_BYTE=0;DUNEBOX_USE_KINECT_FOR_WINDOWS2;'
           # The addon links Kinect20.lib via $(KINECTSDK20_DIR)Lib\$(PlatformTarget)\Kinect20.lib.
           # In a projectGenerator-made NATIVE OF vcxproj that resolves badly ($(PlatformTarget)
           # is a .NET property and is empty here, and PG does not add the SDK lib dir to the
