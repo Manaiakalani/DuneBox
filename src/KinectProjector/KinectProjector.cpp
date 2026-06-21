@@ -187,12 +187,8 @@ void KinectProjector::exit(ofEventArgs& e)
 void KinectProjector::setupGradientField(){
     gradFieldcols = kinectRes.x / gradFieldResolution;
     gradFieldrows = kinectRes.y / gradFieldResolution;
-    
-    gradField = new ofVec2f[gradFieldcols*gradFieldrows];
-    ofVec2f* gfPtr=gradField;
-    for(unsigned int y=0;y<gradFieldrows;++y)
-        for(unsigned int x=0;x<gradFieldcols;++x,++gfPtr)
-            *gfPtr=ofVec2f(0);
+
+    gradField.assign(gradFieldcols * gradFieldrows, ofVec2f(0));
 }
 
 void KinectProjector::setGradFieldResolution(int sgradFieldResolution){
@@ -1419,6 +1415,7 @@ float KinectProjector::elevationToKinectDepth(float elevation, float x, float y)
 ofVec2f KinectProjector::gradientAtKinectCoord(float x, float y){
     int ind = static_cast<int>(floor(x/gradFieldResolution)) + gradFieldcols*static_cast<int>(floor(y/gradFieldResolution));
     fishInd = ind;
+    if (ind < 0 || ind >= static_cast<int>(gradField.size())) return ofVec2f(0);
     return gradField[ind];
 }
 

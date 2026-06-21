@@ -298,7 +298,7 @@ private:
     //kinect buffer
     ofxCvFloatImage             FilteredDepthImage;
     ofxCvColorImage             kinectColorImage;
-    ofVec2f*                    gradField;
+    std::vector<ofVec2f>        gradField;
 	ofFpsCounter                fpsKinect;
 	ofxDatGuiTextInput*         fpsKinectText;
 
