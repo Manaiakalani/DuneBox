@@ -1,5 +1,5 @@
 @echo off
-:: DuneBox Launcher — runs the pre-built exe, or fetches it automatically.
+:: DuneBox Launcher - runs the pre-built exe, or fetches it automatically.
 :: Order: local exe -> published release -> latest successful CI artifact.
 setlocal enabledelayedexpansion
 title DuneBox AR Sandbox
