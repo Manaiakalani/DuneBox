@@ -91,8 +91,10 @@ void ofApp::setup() {
 	ofLogNotice("ofApp") << "Water simulation initialized (" << waterW << "x" << waterH
 	                     << "). Press 'w' to toggle.";
 
-	// Run startup diagnostics
-	diagnostics.probe();
+	// Run startup diagnostics. Pass the real Kinect status from kinectProjector
+	// (set up above) so the overlay reports the configured v1/v2 sensor
+	// correctly instead of only probing the legacy v1 API.
+	diagnostics.probe(kinectProjector->getKinectVersion(), kinectProjector->isKinectConnected());
 
 	// Inter-app bridge to DuneBox-sandcam
 	bridge.setup("127.0.0.1", 9876);
