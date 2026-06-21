@@ -32,7 +32,7 @@ A cross-platform augmented reality sandbox that projects real-time topographic m
 | Sensor | `kinectVersion` | Addon Required | Depth Resolution | Compile Flag |
 |---|---|---|---|---|
 | Kinect v1 (Xbox 360) | `1` (default) | ofxKinect (built-in) | 640×480 | — |
-| Kinect v2 (Xbox One) | `2` | ofxKinectV2 + libfreenect2 | 512×424 | `DUNEBOX_USE_KINECT_V2` |
+| Kinect v2 (Xbox One) | `2` | ofxKinectForWindows2 + Kinect for Windows SDK 2.0 | 512×424 | `DUNEBOX_USE_KINECT_FOR_WINDOWS2` |
 | Azure Kinect DK | `3` | ofxAzureKinect + Azure Kinect SDK | 640×576 | `DUNEBOX_USE_AZURE_KINECT` |
 | Orbbec Femto Bolt | `3` | ofxAzureKinect + Azure Kinect SDK | 640×576 | `DUNEBOX_USE_AZURE_KINECT` |
 
@@ -45,12 +45,21 @@ Edit `bin/data/settings/kinectProjectorSettings.xml` and add/change:
 
 Values: `1` = Kinect V1, `2` = Kinect V2, `3` = Azure Kinect / Orbbec Femto Bolt.
 
-### Building with Kinect V2 support
-1. Install [libfreenect2](https://github.com/OpenKinect/libfreenect2)
-2. Clone [ofxKinectV2](https://github.com/ofTheo/ofxKinectV2) into `openFrameworks/addons/`
-3. Add `ofxKinectV2` to `addons.make`
-4. Add `-DDUNEBOX_USE_KINECT_V2` to compiler flags
-5. Rebuild
+> **The pre-built Windows release already includes Kinect v2 support.** To use a
+> Kinect v2 on Windows: install the [Kinect for Windows Runtime 2.0](https://www.microsoft.com/download/details.aspx?id=44559)
+> (or the full SDK), connect the sensor via its powered adapter to a **USB 3.0**
+> port, set `<kinectVersion>2</kinectVersion>` in
+> `bin/data/settings/kinectProjectorSettings.xml`, and launch. No rebuild needed.
+
+### Building with Kinect V2 support (Windows)
+The Windows CI build links Kinect v2 automatically. To reproduce locally:
+1. Install the [Kinect for Windows SDK 2.0](https://www.microsoft.com/download/details.aspx?id=44561)
+   (sets the `KINECTSDK20_DIR` environment variable).
+2. Clone [ofxKinectForWindows2](https://github.com/elliotwoods/ofxKinectForWindows2)
+   into `openFrameworks/addons/`.
+3. Add `ofxKinectForWindows2` to `addons.make`.
+4. Add `DUNEBOX_USE_KINECT_FOR_WINDOWS2` to the project's preprocessor definitions.
+5. Regenerate the project (projectGenerator) and rebuild.
 
 ### Building with Azure Kinect / Orbbec Femto Bolt support
 1. Install [Azure Kinect SDK v1.4+](https://learn.microsoft.com/azure/kinect-dk/sensor-sdk-download)

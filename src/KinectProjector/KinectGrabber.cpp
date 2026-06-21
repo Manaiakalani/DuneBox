@@ -56,6 +56,24 @@ bool KinectGrabber::setup(){
 	doInPaint = 0;
 	doFullFrameFiltering = false;
 
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+	if (kinectVersion == 2) {
+		// Kinect for Windows v2 via the official Microsoft SDK.
+		ofLogNotice("kinectGrabber") << "setup(): opening Kinect for Windows v2 (ofxKinectForWindows2)";
+		kinectV2Device.open();
+		kinectV2Depth = kinectV2Device.initDepthSource();
+		kinectV2Color = kinectV2Device.initColorSource();
+		kinectV2Device.setUseTextures(false);
+		width = 512;   // Kinect v2 depth frame is fixed at 512x424
+		height = 424;
+		kinectDepthImage.allocate(width, height, 1);
+		filteredframe.allocate(width, height, 1);
+		kinectColorImage.allocate(width, height);
+		kinectColorImage.setUseTexture(false);
+		return openKinect();
+	}
+#endif
+
 	kinect.init();
 	kinect.setRegistration(true); // To have correspondance between RGB and depth images
 	kinect.setUseTexture(false);
@@ -70,6 +88,12 @@ bool KinectGrabber::setup(){
 }
 
 bool KinectGrabber::openKinect() {
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+	if (kinectVersion == 2) {
+		kinectOpened = kinectV2Device.isOpen();
+		return kinectOpened;
+	}
+#endif
 	kinectOpened = kinect.open();
 	return kinectOpened;
 }
@@ -163,13 +187,27 @@ void KinectGrabber::threadedFunction() {
         this->actions.clear();
         this->actionsLock.unlock();
         
-        kinect.update();
-        if(kinect.isFrameNew()){
-            kinectDepthImage = kinect.getRawDepthPixels();
-            filter();
-            filteredframe.setImageType(OF_IMAGE_GRAYSCALE);
-            updateGradientField();
-			kinectColorImage.setFromPixels(kinect.getPixels());
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+        if (kinectVersion == 2) {
+            kinectV2Device.update();
+            if (kinectV2Device.isFrameNew() && kinectV2Depth) {
+                kinectDepthImage = kinectV2Depth->getPixels(); // uint16 depth in mm, 512x424
+                filter();
+                filteredframe.setImageType(OF_IMAGE_GRAYSCALE);
+                updateGradientField();
+                updateKinectV2ColorInDepthFrame();
+            }
+        } else
+#endif
+        {
+            kinect.update();
+            if(kinect.isFrameNew()){
+                kinectDepthImage = kinect.getRawDepthPixels();
+                filter();
+                filteredframe.setImageType(OF_IMAGE_GRAYSCALE);
+                updateGradientField();
+                kinectColorImage.setFromPixels(kinect.getPixels());
+            }
         }
         if (storedframes == 0)
         {
@@ -182,7 +220,14 @@ void KinectGrabber::threadedFunction() {
         }
         
     }
-    kinect.close();
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+    if (kinectVersion == 2) {
+        kinectV2Device.close();
+    } else
+#endif
+    {
+        kinect.close();
+    }
     delete[] averagingBuffer;
     delete[] statBuffer;
     delete[] validBuffer;
@@ -642,14 +687,80 @@ float KinectGrabber::getValidBuffer(int x, int y){
 
 ofMatrix4x4 KinectGrabber::getWorldMatrix() {
 	auto mat = ofMatrix4x4();
-	if (kinectOpened) {
-		ofVec3f a = kinect.getWorldCoordinateAt(0, 0, 1);// Trick to access kinect internal parameters without having to modify ofxKinect
-		ofVec3f b = kinect.getWorldCoordinateAt(1, 1, 1);
-		ofLogVerbose("kinectGrabber") << "getWorldMatrix(): Computing kinect world matrix";
-		mat = ofMatrix4x4(b.x - a.x, 0, 0, a.x,
-			0, b.y - a.y, 0, a.y,
-			0, 0, 0, 1,
-			0, 0, 0, 1);
+	if (!kinectOpened) {
+		return mat;
 	}
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+	if (kinectVersion == 2) {
+		// Derive an affine pixel->world mapping from the Kinect v2
+		// depth-to-camera-space ray table. For a depth d the camera-space
+		// point is approximately (table.x*d, table.y*d, d), which matches the
+		// affine form the shaders expect from the V1 path. This is a first
+		// approximation; the in-app calibration refines the absolute scale.
+		ofFloatPixels table;
+		if (kinectV2Depth) {
+			kinectV2Depth->getDepthToWorldTable(table);
+		}
+		if (table.getWidth() > 1 && table.getHeight() > 1) {
+			int w = table.getWidth();
+			ofVec2f a (table[(0)         * 2 + 0], table[(0)         * 2 + 1]); // pixel (0,0)
+			ofVec2f bx(table[(1)         * 2 + 0], table[(1)         * 2 + 1]); // pixel (1,0)
+			ofVec2f by(table[(w)         * 2 + 0], table[(w)         * 2 + 1]); // pixel (0,1)
+			ofLogVerbose("kinectGrabber") << "getWorldMatrix(): Computing Kinect v2 world matrix from depth-to-world table";
+			mat = ofMatrix4x4(bx.x - a.x, 0, 0, a.x,
+				0, by.y - a.y, 0, a.y,
+				0, 0, 0, 1,
+				0, 0, 0, 1);
+		} else {
+			ofLogWarning("kinectGrabber") << "getWorldMatrix(): Kinect v2 depth-to-world table unavailable; using identity";
+		}
+		return mat;
+	}
+#endif
+	ofVec3f a = kinect.getWorldCoordinateAt(0, 0, 1);// Trick to access kinect internal parameters without having to modify ofxKinect
+	ofVec3f b = kinect.getWorldCoordinateAt(1, 1, 1);
+	ofLogVerbose("kinectGrabber") << "getWorldMatrix(): Computing kinect world matrix";
+	mat = ofMatrix4x4(b.x - a.x, 0, 0, a.x,
+		0, b.y - a.y, 0, a.y,
+		0, 0, 0, 1,
+		0, 0, 0, 1);
 	return mat;
 }
+
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+// Build a depth-resolution (512x424) color image by mapping the 1920x1080
+// color frame into the depth frame using the SDK coordinate mapper. Color is
+// only used for display/calibration, not for terrain, so an approximate
+// nearest-pixel fetch is sufficient.
+void KinectGrabber::updateKinectV2ColorInDepthFrame() {
+	if (!kinectV2Color || !kinectV2Depth) {
+		return;
+	}
+	const ofPixels & colorPix = kinectV2Color->getPixels(); // RGBA, 1920x1080
+	if (colorPix.getWidth() < 1) {
+		return;
+	}
+	ofFloatPixels mapping;
+	kinectV2Depth->getColorInDepthFrameMapping(mapping); // per depth-pixel (colX,colY)
+	if (mapping.getWidth() < 1) {
+		return;
+	}
+	int cw = colorPix.getWidth();
+	int ch = colorPix.getHeight();
+	ofPixels dst;
+	dst.allocate(width, height, OF_PIXELS_RGB);
+	for (int y = 0; y < (int)height; y++) {
+		for (int x = 0; x < (int)width; x++) {
+			int idx = y * (int)width + x;
+			float fx = mapping[idx * 2 + 0];
+			float fy = mapping[idx * 2 + 1];
+			ofColor c(0, 0, 0);
+			if (fx >= 0 && fy >= 0 && fx < cw && fy < ch) {
+				c = colorPix.getColor((int)fx, (int)fy);
+			}
+			dst.setColor(x, y, c);
+		}
+	}
+	kinectColorImage.setFromPixels(dst);
+}
+#endif

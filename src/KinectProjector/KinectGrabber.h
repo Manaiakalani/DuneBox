@@ -25,6 +25,17 @@ General Public License for more details.
 #include "ofxCv.h"
 #include "ofxKinect.h"
 
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+// Kinect for Windows v2 (official Microsoft SDK) backend. Kinect.h pulls in
+// <windows.h>, which by default includes the legacy <winsock.h>; make sure the
+// modern <winsock2.h> is seen first so it does not clash with the rest of the
+// app's networking headers (Bridge uses winsock2).
+#ifdef TARGET_WIN32
+#include <winsock2.h>
+#endif
+#include "ofxKinectForWindows2.h"
+#endif
+
 #include "Utils.h"
 
 class KinectGrabber: public ofThread {
@@ -66,6 +77,13 @@ public:
     
     ofVec2f getKinectSize(){
         return ofVec2f(width, height);
+    }
+
+    // Select the depth sensor backend before calling setup(): 1 = Kinect v1
+    // (ofxKinect), 2 = Kinect v2 (ofxKinectForWindows2). v2 only takes effect
+    // when the binary is compiled with DUNEBOX_USE_KINECT_FOR_WINDOWS2.
+    void setKinectVersion(int v){
+        kinectVersion = v;
     }
     
     float getRawDepthAt(int x, int y){
@@ -127,6 +145,13 @@ private:
     // Kinect parameters
 	bool kinectOpened;
     ofxKinect               kinect;
+    int kinectVersion = 1; // 1 = Kinect v1 (ofxKinect); 2 = Kinect v2 (ofxKinectForWindows2)
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+    ofxKFW2::Device                         kinectV2Device;
+    std::shared_ptr<ofxKFW2::Source::Depth> kinectV2Depth;
+    std::shared_ptr<ofxKFW2::Source::Color> kinectV2Color;
+    void updateKinectV2ColorInDepthFrame();
+#endif
     unsigned int width, height; // Width and height of kinect frames
 	int minX, maxX; // , ROIwidth; // ROI definition
 	int minY, maxY; //, ROIheight;
