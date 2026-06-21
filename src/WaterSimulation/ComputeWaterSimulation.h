@@ -82,6 +82,11 @@ public:
     void setEnabled(bool enabled);
     bool isEnabled() const { return enabled; }
 
+    /// True once setup() successfully loaded all compute shaders and allocated
+    /// textures. If false after setup(), the caller should fall back to the
+    /// fragment-shader water simulation.
+    bool isInitialized() const { return initialized; }
+
     void loadSettings(const std::string& path = "settings/waterSettings.xml");
     void saveSettings(const std::string& path = "settings/waterSettings.xml");
 

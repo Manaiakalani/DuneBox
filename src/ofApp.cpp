@@ -605,6 +605,13 @@ void ofApp::waterSimSetup(int w, int h) {
 	if (useComputeWaterSim) {
 		ofLogNotice("ofApp") << "GL 4.3+ detected — using COMPUTE SHADER water simulation";
 		waterSimCompute.setup(w, h);
+		// setup() can fail (e.g. a compute shader fails to compile/link). Don't
+		// silently run a no-op water sim — fall back to the fragment path.
+		if (!waterSimCompute.isInitialized()) {
+			ofLogError("ofApp") << "Compute water simulation failed to initialize — falling back to FRAGMENT SHADER water simulation";
+			useComputeWaterSim = false;
+			waterSimFragment.setup(w, h);
+		}
 	} else {
 		ofLogNotice("ofApp") << "GL < 4.3 — using FRAGMENT SHADER water simulation (fallback)";
 		waterSimFragment.setup(w, h);
