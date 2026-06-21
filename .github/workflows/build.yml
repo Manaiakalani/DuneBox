@@ -79,83 +79,26 @@ jobs:
           find ofxDatGui/src -name '*.h' -print0 \
             | xargs -0 sed -i 's/#pragma once/#pragma once\nusing namespace std;/'
 
-      - name: Install Kinect for Windows SDK 2.0
+      - name: Configure Kinect SDK (vendored headers + import lib)
         shell: pwsh
-        timeout-minutes: 20
         run: |
           # ofxKinectForWindows2 only needs the SDK *headers* (inc\Kinect.h) and the
-          # import lib (Lib\x64\Kinect20.lib) to compile and link; resolved via the
-          # KINECTSDK20_DIR env var (the addon uses the $(KINECTSDK20_DIR)inc form).
+          # x64 import lib (Lib\x64\Kinect20.lib) to compile and link; both are resolved
+          # via the KINECTSDK20_DIR env var (the addon uses the $(KINECTSDK20_DIR)inc and
+          # $(KINECTSDK20_DIR)Lib\x64\Kinect20.lib forms).
           #
-          # The full KinectSDK-v2.0_1409-Setup.exe HANGS indefinitely on headless CI
-          # runners because it installs the USB driver + KinectMonitor service, which
-          # never completes without an interactive session. So instead of running the
-          # installer we EXTRACT the SDK files only: 7-Zip unpacks the bundle's MSIs,
-          # then `msiexec /a` admin-extracts each MSI's file tree (an administrative
-          # install lays files down WITHOUT running the driver/service install actions
-          # that hang). No runtime/driver is needed to build.
+          # We do NOT run the full KinectSDK-v2.0_1409-Setup.exe: it HANGS indefinitely
+          # on headless CI runners (it installs the USB driver + KinectMonitor service,
+          # which never completes without an interactive desktop), and the bundle cannot
+          # be cleanly unpacked to its MSIs by 7-Zip (the product MSIs live in a second
+          # attached container 7-Zip does not extract). Instead the ~0.6 MB of headers +
+          # the 5 KB import lib are vendored in-repo (see third_party/KinectSDK-v2.0_1409/
+          # README.md). This makes the build fast and deterministic. The 280 MB runtime
+          # is only needed on the END USER's machine (for Kinect20.dll + the USB driver).
           $ErrorActionPreference = 'Stop'
-          $url = "https://download.microsoft.com/download/F/2/D/F2D1012E-3BC6-49C5-B8B3-5ACFF58AF7B8/KinectSDK-v2.0_1409-Setup.exe"
-          Write-Host "Downloading Kinect for Windows SDK 2.0..."
-          Invoke-WebRequest -Uri $url -OutFile KinectSDK-Setup.exe -UseBasicParsing
-
-          $stage = Join-Path $env:RUNNER_TEMP 'kinect_sdk'
-          New-Item -ItemType Directory -Force -Path $stage | Out-Null
-
-          function Find-Sdk($root) {
-            $h = Get-ChildItem -Path $root -Recurse -Filter Kinect.h -ErrorAction SilentlyContinue |
-                   Where-Object { Test-Path (Join-Path $_.Directory.Parent.FullName 'Lib\x64\Kinect20.lib') } |
-                   Select-Object -First 1
-            if ($h) { return ($h.Directory.Parent.FullName.TrimEnd('\') + '\') }
-            return $null
-          }
-
-          # --- Strategy A: 7-Zip extract the bundle, then admin-extract the MSIs ---
-          $sevenZip = @("$env:ProgramFiles\7-Zip\7z.exe", "${env:ProgramFiles(x86)}\7-Zip\7z.exe",
-                        (Get-Command 7z.exe -ErrorAction SilentlyContinue | ForEach-Object Source)) |
-                        Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
-          if ($sevenZip) {
-            Write-Host "Using 7-Zip: $sevenZip"
-            $bundleDir = Join-Path $env:RUNNER_TEMP 'kinect_bundle'
-            New-Item -ItemType Directory -Force -Path $bundleDir | Out-Null
-            & $sevenZip x KinectSDK-Setup.exe "-o$bundleDir" -y *> $null
-            $msis = Get-ChildItem -Path $bundleDir -Recurse -Filter *.msi -ErrorAction SilentlyContinue
-            Write-Host "Found $($msis.Count) MSI payload(s) in the bundle."
-            foreach ($m in $msis) {
-              Write-Host "  admin-extracting $($m.Name) ..."
-              $a = Start-Process msiexec -ArgumentList @('/a', "`"$($m.FullName)`"", '/qn', "TARGETDIR=`"$stage`"") -Wait -PassThru
-              Write-Host "    msiexec exit: $($a.ExitCode)"
-            }
-          } else {
-            Write-Host "7-Zip not found on runner; skipping extract strategy."
-          }
-          $sdk = Find-Sdk $stage
-
-          # --- Strategy B (fallback): run the installer but proceed the moment the
-          # headers+lib land, then kill it so the hanging driver/service step is skipped.
-          if (-not $sdk) {
-            Write-Host "Extract did not yield the SDK; falling back to timed install..."
-            $installed = "C:\Program Files\Microsoft SDKs\Kinect\v2.0_1409\"
-            $hdr = Join-Path $installed 'inc\Kinect.h'
-            $lib = Join-Path $installed 'Lib\x64\Kinect20.lib'
-            $proc = Start-Process -FilePath .\KinectSDK-Setup.exe -ArgumentList '/install','/quiet','/norestart' -PassThru
-            $deadline = (Get-Date).AddMinutes(12)
-            while ((Get-Date) -lt $deadline) {
-              if ((Test-Path $hdr) -and (Test-Path $lib)) { break }
-              if ($proc.HasExited) { break }
-              Start-Sleep -Seconds 5
-            }
-            if (-not $proc.HasExited) {
-              Write-Host "Stopping installer (SDK files present or timed out) so the job can continue."
-              Get-Process msiexec -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-              try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
-            }
-            if ((Test-Path $hdr) -and (Test-Path $lib)) { $sdk = $installed }
-          }
-
-          if (-not $sdk) { Write-Error "Could not obtain Kinect SDK headers + Kinect20.lib"; exit 1 }
-          if (-not (Test-Path (Join-Path $sdk 'inc\Kinect.h')))        { Write-Error "Kinect.h missing under $sdk"; exit 1 }
-          if (-not (Test-Path (Join-Path $sdk 'Lib\x64\Kinect20.lib'))) { Write-Error "Kinect20.lib missing under $sdk"; exit 1 }
+          $sdk = (Resolve-Path "project\third_party\KinectSDK-v2.0_1409").Path.TrimEnd('\') + '\'
+          if (-not (Test-Path (Join-Path $sdk 'inc\Kinect.h')))        { Write-Error "vendored Kinect.h missing under $sdk"; exit 1 }
+          if (-not (Test-Path (Join-Path $sdk 'Lib\x64\Kinect20.lib'))) { Write-Error "vendored Kinect20.lib missing under $sdk"; exit 1 }
           "KINECTSDK20_DIR=$sdk" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "KINECTSDK20_DIR=$sdk"
 
