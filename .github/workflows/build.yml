@@ -100,6 +100,13 @@ jobs:
           if (-not (Test-Path (Join-Path $sdk 'inc\Kinect.h')))        { Write-Error "vendored Kinect.h missing under $sdk"; exit 1 }
           if (-not (Test-Path (Join-Path $sdk 'Lib\x64\Kinect20.lib'))) { Write-Error "vendored Kinect20.lib missing under $sdk"; exit 1 }
           "KINECTSDK20_DIR=$sdk" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          # The addon links $(KINECTSDK20_DIR)Lib\$(PlatformTarget)\Kinect20.lib.
+          # $(PlatformTarget) is a .NET property and is EMPTY in a projectGenerator-made
+          # native OF vcxproj, which collapses the lib dir to ...\Lib\ and fails to find
+          # Kinect20.lib (it lives in Lib\x64). Export PlatformTarget=x64 so the intended
+          # ...\Lib\x64 path resolves. (A copy of the lib is also vendored at Lib\ root as
+          # a belt-and-suspenders fallback for the empty-PlatformTarget case.)
+          "PlatformTarget=x64" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "KINECTSDK20_DIR=$sdk"
 
       - name: Place project in OF tree
