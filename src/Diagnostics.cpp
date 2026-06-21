@@ -1,5 +1,5 @@
 /***********************************************************************
-Diagnostics.cpp — startup hardware diagnostics overlay
+Diagnostics.cpp — startup hardware diagnostics report
 
 This file is part of DuneBox, a fork of Magic Sand.
 ***********************************************************************/
@@ -88,83 +88,17 @@ void Diagnostics::probe(int kinectVersion, bool kinectConnected) {
     items.push_back(probeSettingsFile("settings/sandSurfaceRendererSettings.xml", "Renderer settings"));
 }
 
-// ── Timing ───────────────────────────────────────────────────────────────────
-
-void Diagnostics::update(float /*dt*/) {
-    if (!active) return;
-    // Drive the auto-dismiss off the wall clock rather than accumulating
-    // per-frame deltas. In a two-window app the reported frame time can be
-    // unreliable on the first frames; using ofGetElapsedTimef() guarantees the
-    // overlay dismisses after `duration` real seconds regardless, so it can
-    // never get stuck on screen.
-    float now = ofGetElapsedTimef();
-    if (startTime < 0.0f) startTime = now;
-    elapsed = now - startTime;
-    if (keyDismissed || elapsed >= duration) {
-        active = false;
+void Diagnostics::log() const {
+    // Emit the startup diagnostics to the console instead of drawing a blocking
+    // on-screen overlay. In the two-window (main GUI + projector) layout the
+    // overlay would cover the main window's GUI and could remain on screen,
+    // making the app look frozen. The console log is just as informative and
+    // can never block the UI.
+    ofLogNotice("Diagnostics") << "----- DuneBox startup diagnostics -----";
+    for (const auto& item : items) {
+        ofLogNotice("Diagnostics") << item.indicator() << " " << item.label
+                                    << ": " << item.detail;
     }
+    ofLogNotice("Diagnostics") << "---------------------------------------";
 }
 
-bool Diagnostics::shouldDismiss() const {
-    return !active;
-}
-
-void Diagnostics::onKeyPressed() {
-    keyDismissed = true;
-    active = false;
-}
-
-// ── Drawing ──────────────────────────────────────────────────────────────────
-
-void Diagnostics::draw() {
-    if (!active && elapsed > 0) return;
-
-    float w = ofGetWidth();
-    float h = ofGetHeight();
-
-    // Semi-transparent dark overlay
-    ofSetColor(14, 18, 26, 230);
-    ofDrawRectangle(0, 0, w, h);
-
-    float rowH   = 26.0f;
-    float pad     = 24.0f;
-    float panelW  = std::min(560.0f, w - 60.0f);
-    float panelH  = 60.0f + rowH * items.size() + 30.0f;
-    float px      = (w - panelW) / 2.0f;
-    float py      = (h - panelH) / 2.0f;
-
-    // Card background
-    ofSetColor(22, 28, 40, 238);
-    ofDrawRectRounded(px, py, panelW, panelH, 12);
-    ofNoFill();
-    ofSetColor(72, 124, 188);
-    ofDrawRectRounded(px, py, panelW, panelH, 12);
-    ofFill();
-
-    // Title
-    ofSetColor(220, 228, 238);
-    ofDrawBitmapString("DuneBox Diagnostics", px + pad, py + pad + 10);
-
-    // Rows
-    float y = py + pad + 36;
-    for (auto& item : items) {
-        ofSetColor(item.color());
-        ofDrawBitmapString(item.indicator(), px + pad, y);
-
-        ofSetColor(220, 228, 238);
-        ofDrawBitmapString(item.label, px + pad + 42, y);
-
-        ofSetColor(150, 162, 178);
-        std::string detail = item.detail;
-        if (detail.size() > 50) detail = detail.substr(0, 47) + "...";
-        ofDrawBitmapString(detail, px + pad + 180, y);
-
-        y += rowH;
-    }
-
-    // Auto-dismiss hint
-    float remaining = std::max(0.0f, duration - elapsed);
-    ofSetColor(100, 110, 130);
-    ofDrawBitmapString("Auto-dismiss in " + ofToString((int)ceilf(remaining)) + "s — press any key",
-                       px + pad, y + 10);
-}
