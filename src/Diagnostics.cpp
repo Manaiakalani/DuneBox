@@ -15,11 +15,20 @@ This file is part of DuneBox, a fork of Magic Sand.
 
 // ── Probing ──────────────────────────────────────────────────────────────────
 
-static DiagnosticItem probeKinect() {
+static DiagnosticItem probeKinect(int kinectVersion, bool kinectConnected) {
+    if (kinectVersion == 2) {
+        if (kinectConnected)
+            return {"Kinect", "v2 connected", DiagnosticItem::OK};
+        return {"Kinect", "v2 not opened — may be in use by another app", DiagnosticItem::ERR};
+    }
+    if (kinectVersion == 3) {
+        return {"Kinect", "Azure (v3) — unsupported in this build", DiagnosticItem::WARN};
+    }
+    // Kinect v1 (ofxKinect / libfreenect)
     int n = ofxKinect::numConnectedDevices();
     if (n > 0)
-        return {"Kinect", std::to_string(n) + " device(s) connected", DiagnosticItem::OK};
-    return {"Kinect", "no device detected", DiagnosticItem::ERR};
+        return {"Kinect", "v1: " + std::to_string(n) + " device(s) connected", DiagnosticItem::OK};
+    return {"Kinect", "v1: no device detected", DiagnosticItem::ERR};
 }
 
 static DiagnosticItem probeGPU() {
@@ -66,11 +75,11 @@ static DiagnosticItem probeSettingsFile(const std::string& path, const std::stri
     return {label, "not found — will use defaults", DiagnosticItem::WARN};
 }
 
-void Diagnostics::probe() {
+void Diagnostics::probe(int kinectVersion, bool kinectConnected) {
     if (probed) return;
     probed = true;
 
-    items.push_back(probeKinect());
+    items.push_back(probeKinect(kinectVersion, kinectConnected));
     items.push_back(probeGPU());
     items.push_back(probeOpenGL());
     items.push_back(probeDisplay());
@@ -81,9 +90,16 @@ void Diagnostics::probe() {
 
 // ── Timing ───────────────────────────────────────────────────────────────────
 
-void Diagnostics::update(float dt) {
+void Diagnostics::update(float /*dt*/) {
     if (!active) return;
-    elapsed += dt;
+    // Drive the auto-dismiss off the wall clock rather than accumulating
+    // per-frame deltas. In a two-window app the reported frame time can be
+    // unreliable on the first frames; using ofGetElapsedTimef() guarantees the
+    // overlay dismisses after `duration` real seconds regardless, so it can
+    // never get stuck on screen.
+    float now = ofGetElapsedTimef();
+    if (startTime < 0.0f) startTime = now;
+    elapsed = now - startTime;
     if (keyDismissed || elapsed >= duration) {
         active = false;
     }

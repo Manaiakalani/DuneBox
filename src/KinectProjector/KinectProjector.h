@@ -185,6 +185,8 @@ public:
 
 	bool isKinectConnected() const { return kinectOpened; }
 
+	int getKinectVersion() const { return kinectVersion; }
+
 	// Debug functions
 	void SaveFilteredDepthImage();
 	void SaveKinectColorImage();
