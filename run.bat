@@ -4,6 +4,12 @@
 setlocal enabledelayedexpansion
 title DuneBox AR Sandbox
 
+echo.
+echo  NOTE: Run only ONE DuneBox app at a time - either this C++ Magic-Sand
+echo        OR the Python sandcam. They both open the exclusive Kinect v2,
+echo        so running both at once will cause "no Kinect connected" errors.
+echo.
+
 set "ROOT=%~dp0"
 set "BINDIR=%ROOT%bin"
 set "EXE=%BINDIR%\Magic-Sand.exe"
