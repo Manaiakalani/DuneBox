@@ -92,9 +92,11 @@ void ofApp::setup() {
 	                     << "). Press 'w' to toggle.";
 
 	// Run startup diagnostics. Pass the real Kinect status from kinectProjector
-	// (set up above) so the overlay reports the configured v1/v2 sensor
-	// correctly instead of only probing the legacy v1 API.
+	// (set up above) so the report shows the configured v1/v2 sensor correctly
+	// instead of only probing the legacy v1 API. Results are logged to the
+	// console (no blocking on-screen overlay — see Diagnostics.h).
 	diagnostics.probe(kinectProjector->getKinectVersion(), kinectProjector->isKinectConnected());
+	diagnostics.log();
 
 	// Inter-app bridge to DuneBox-sandcam
 	bridge.setup("127.0.0.1", 9876);
@@ -102,11 +104,6 @@ void ofApp::setup() {
 
 
 void ofApp::update() {
-	// Tick diagnostics timer
-	if (diagnostics.isActive()) {
-		diagnostics.update(ofGetLastFrameTime());
-	}
-
     // Call kinectProjector->update() first during the update function()
 	kinectProjector->update();
    	sandSurfaceRenderer->update();
@@ -274,11 +271,6 @@ void ofApp::draw()
 		ofDrawBitmapString(themeDisplayName, cx, cy);
 		ofSetColor(255);
 	}
-
-	// Diagnostics overlay (drawn on top, auto-dismisses)
-	if (diagnostics.isActive()) {
-		diagnostics.draw();
-	}
 }
 
 void ofApp::drawProjWindow(ofEventArgs &args) 
@@ -312,12 +304,6 @@ void ofApp::drawProjWindow(ofEventArgs &args)
 
 void ofApp::keyPressed(int key) 
 {
-	// Dismiss diagnostics on any key
-	if (diagnostics.isActive()) {
-		diagnostics.onKeyPressed();
-		return;
-	}
-
 	if (key == 'c')
 	{
 		kinectProjector->SaveKinectColorImage();
