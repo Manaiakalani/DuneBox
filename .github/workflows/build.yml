@@ -156,7 +156,21 @@ jobs:
           # Bridge.cpp includes <winsock2.h> first and Bridge.h is socket-header-free.
           $raw = Get-Content $vcx -Raw
           $raw = $raw -replace '<PreprocessorDefinitions>', '<PreprocessorDefinitions>_HAS_AUTO_PTR_ETC=1;DUNEBOX_USE_KINECT_FOR_WINDOWS2;'
+          # The addon links Kinect20.lib via $(KINECTSDK20_DIR)Lib\$(PlatformTarget)\Kinect20.lib.
+          # In a projectGenerator-made NATIVE OF vcxproj that resolves badly ($(PlatformTarget)
+          # is a .NET property and is empty here, and PG does not add the SDK lib dir to the
+          # linker search path), so link.exe only sees a bare 'Kinect20.lib' and fails with
+          # LNK1181. Rewrite the dependency to the ABSOLUTE vendored import lib so the linker
+          # opens it directly, independent of any library-directory resolution.
+          $kinectLib = (Resolve-Path "project\third_party\KinectSDK-v2.0_1409\Lib\x64\Kinect20.lib").Path
+          Write-Host "Kinect20.lib absolute path: $kinectLib"
+          Write-Host "--- vcxproj lib references BEFORE patch ---"
+          ($raw -split "`r?`n") | Select-String -Pattern 'Kinect20|AdditionalDependencies|AdditionalLibraryDirectories' | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
+          $raw = $raw.Replace('Kinect20.lib', $kinectLib)
           Set-Content $vcx $raw
+          if (-not (Select-String -Path $vcx -Pattern ([regex]::Escape($kinectLib)) -Quiet)) {
+            Write-Error "Failed to wire absolute Kinect20.lib path into Magic-Sand.vcxproj"; exit 1
+          }
           if (-not (Select-String -Path $vcx -Pattern '_HAS_AUTO_PTR_ETC=1' -Quiet)) {
             Write-Error "Failed to inject preprocessor defs into Magic-Sand.vcxproj"; exit 1
           }
