@@ -113,6 +113,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p openFrameworks/apps/myApps
+          # CRITICAL: the openFrameworks tree is restored from a static cache
+          # (key of-<ver>-win-vs) that is saved only once, on the first run. That
+          # cache captured the first run's Magic-Sand app folder (its src + obj).
+          # If we don't remove it, `cp -r project Magic-Sand` would NEST the fresh
+          # checkout at Magic-Sand/project/ (because Magic-Sand already exists),
+          # and the build would compile the STALE first-run sources instead of the
+          # current checkout. Wipe it so the current source always wins.
+          rm -rf openFrameworks/apps/myApps/Magic-Sand
           cp -r project openFrameworks/apps/myApps/Magic-Sand
           # Defensive: drop any committed IDE project files so projectGenerator
           # always builds a clean OF 0.12 one (correct OpenCV 4.x / libusb-1.0 /
@@ -262,7 +270,8 @@ jobs:
           if ($hasImport -and $hasBranch) {
             Write-Host "OK: Magic-Sand.exe imports Kinect20.dll AND contains the KinectGrabber v2 branch (Kinect v2 path compiled in)"
           } else {
-            Write-Warning "DIAG ROUND: Kinect v2 path NOT fully compiled in (import=$hasImport branch=$hasBranch). Continuing to upload artifact for inspection."
+            Write-Error "Kinect v2 path NOT fully compiled in (import=$hasImport branch=$hasBranch). DUNEBOX_USE_KINECT_FOR_WINDOWS2 did not take effect. Failing."
+            exit 1
           }
 
           # Create zip
