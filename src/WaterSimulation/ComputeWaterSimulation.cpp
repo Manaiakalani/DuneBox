@@ -22,6 +22,7 @@ This file is part of DuneBox, a fork of Magic Sand.
 #include "ofXml.h"
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 static const string COMPUTE_SHADER_PATH = "shaders/water/compute/";
 
@@ -84,6 +85,13 @@ bool ComputeWaterSimulation::isComputeSupported() {
     return (major > 4) || (major == 4 && minor >= 3);
 }
 
+// Check if glClearTexImage (GL 4.4) is available
+static bool hasGlClearTexImage() {
+    int major = ofGetGLRenderer()->getGLVersionMajor();
+    int minor = ofGetGLRenderer()->getGLVersionMinor();
+    return (major > 4) || (major == 4 && minor >= 4);
+}
+
 // ─── GL texture allocation ─────────────────────────────────────────
 
 GLuint ComputeWaterSimulation::allocateTexture(int w, int h, GLenum internalFormat) {
@@ -100,13 +108,20 @@ GLuint ComputeWaterSimulation::allocateTexture(int w, int h, GLenum internalForm
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     
-    // Clear to zero
-    if (internalFormat == GL_RGBA32F) {
-        float clearColor[4] = {0, 0, 0, 0};
-        glClearTexImage(tex, 0, GL_RGBA, GL_FLOAT, clearColor);
+    // Clear to zero - use glClearTexImage (4.4) if available, else glTexSubImage2D
+    if (hasGlClearTexImage()) {
+        if (internalFormat == GL_RGBA32F) {
+            float clearColor[4] = {0, 0, 0, 0};
+            glClearTexImage(tex, 0, GL_RGBA, GL_FLOAT, clearColor);
+        } else {
+            unsigned char clearColor[4] = {0, 0, 0, 0};
+            glClearTexImage(tex, 0, GL_RGBA, GL_UNSIGNED_BYTE, clearColor);
+        }
     } else {
-        unsigned char clearColor[4] = {0, 0, 0, 0};
-        glClearTexImage(tex, 0, GL_RGBA, GL_UNSIGNED_BYTE, clearColor);
+        // Fallback for GL 4.3: upload a zero-filled buffer via glTexSubImage2D
+        size_t pixelSize = (internalFormat == GL_RGBA32F) ? sizeof(float) * 4 : 4;
+        std::vector<unsigned char> zeros(w * h * pixelSize, 0);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, format, type, zeros.data());
     }
     
     glBindTexture(GL_TEXTURE_2D, 0);
