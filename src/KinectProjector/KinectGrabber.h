@@ -20,10 +20,21 @@ General Public License for more details.
 ***********************************************************************/
 
 #pragma once
+
+// Force-enable the Kinect v2 backend and win the winsock1/2 include ordering.
+// MUST come before ofMain.h (which transitively includes <windows.h>).
+#include "dunebox_kinect_v2_prefix.h"
+
 #include "ofMain.h"
 #include "ofxOpenCv.h"
 #include "ofxCv.h"
 #include "ofxKinect.h"
+
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+// Kinect for Windows v2 (official Microsoft SDK) backend. winsock2.h was already
+// included above (before ofMain.h) to avoid the winsock1/2 clash.
+#include "ofxKinectForWindows2.h"
+#endif
 
 #include "Utils.h"
 
@@ -67,6 +78,13 @@ public:
     ofVec2f getKinectSize(){
         return ofVec2f(width, height);
     }
+
+    // Select the depth sensor backend before calling setup(): 1 = Kinect v1
+    // (ofxKinect), 2 = Kinect v2 (ofxKinectForWindows2). v2 only takes effect
+    // when the binary is compiled with DUNEBOX_USE_KINECT_FOR_WINDOWS2.
+    void setKinectVersion(int v){
+        kinectVersion = v;
+    }
     
     float getRawDepthAt(int x, int y){
         return kinectDepthImage.getData()[(int)(y*width+x)];
@@ -96,7 +114,11 @@ public:
 
 	ofThreadChannel<ofFloatPixels> filtered;
 	ofThreadChannel<ofPixels> colored;
-	ofThreadChannel<ofVec2f*> gradient;
+	// Carry the gradient field by value (a copy per frame) rather than a raw
+	// pointer: the grabber thread keeps mutating its own gradField buffer every
+	// frame, so handing the consumer the live pointer was a data race (and the
+	// consumer leaked/aliased its own buffer). A moved std::vector is safe.
+	ofThreadChannel<std::vector<ofVec2f>> gradient;
     
 private:
 	void threadedFunction() override;
@@ -127,6 +149,13 @@ private:
     // Kinect parameters
 	bool kinectOpened;
     ofxKinect               kinect;
+    int kinectVersion = 1; // 1 = Kinect v1 (ofxKinect); 2 = Kinect v2 (ofxKinectForWindows2)
+#ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
+    ofxKFW2::Device                         kinectV2Device;
+    std::shared_ptr<ofxKFW2::Source::Depth> kinectV2Depth;
+    std::shared_ptr<ofxKFW2::Source::Color> kinectV2Color;
+    void updateKinectV2ColorInDepthFrame();
+#endif
     unsigned int width, height; // Width and height of kinect frames
 	int minX, maxX; // , ROIwidth; // ROI definition
 	int minY, maxY; //, ROIheight;

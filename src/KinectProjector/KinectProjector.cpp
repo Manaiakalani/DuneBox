@@ -98,33 +98,18 @@ void KinectProjector::setup(bool sdisplayGui)
         }
     }
 
-    // The realtime depth pipeline (update(), framefilter, world matrix,
-    // getRawDepthAt(), and every performInThread() call) is currently wired
-    // exclusively to the V1 'kinectgrabber'. Selecting V2 or Azure opens that
-    // device but leaves the pipeline running on the never-opened V1 grabber,
-    // producing a silently broken capture. Until the sensor backend is unified
-    // behind a common interface, force V1 and warn loudly so the limitation is
-    // explicit rather than a silent failure.
-    if (kinectVersion != 1) {
-        ofLogWarning("KinectProjector")
-            << "kinectVersion=" << kinectVersion
-            << " is not yet supported by the realtime depth pipeline; falling "
-            << "back to Kinect V1. V2/Azure support requires a backend refactor.";
-        kinectVersion = 1;
-    }
     ofLogNotice("KinectProjector") << "Using kinectVersion=" << kinectVersion;
 
-    if (kinectVersion == 2) {
-        kinectOpened = kinectV2.setup();
-        if (kinectOpened) {
-            ofLogNotice("KinectProjector") << "Kinect V2 initialised";
-        }
-    } else if (kinectVersion == 3) {
+    if (kinectVersion == 3) {
         kinectOpened = azureKinect.setup();
         if (kinectOpened) {
             ofLogNotice("KinectProjector") << "Azure Kinect / Orbbec Femto Bolt initialised";
         }
     } else {
+        // Kinect V1 and V2 both run through the unified 'kinectgrabber'. V2
+        // (ofxKinectForWindows2) is only active in a build compiled with
+        // DUNEBOX_USE_KINECT_FOR_WINDOWS2; otherwise the grabber stays on V1.
+        kinectgrabber.setKinectVersion(kinectVersion);
         kinectOpened = kinectgrabber.setup();
     }
 	lastKinectOpenTry = ofGetElapsedTimef(); 
@@ -143,9 +128,7 @@ void KinectProjector::setup(bool sdisplayGui)
     
     // Get projector and kinect width & height
     projRes = ofVec2f(projWindow->getWidth(), projWindow->getHeight());
-    if (kinectVersion == 2) {
-        kinectRes = kinectV2.getDepthResolution();
-    } else if (kinectVersion == 3) {
+    if (kinectVersion == 3) {
         kinectRes = azureKinect.getDepthResolution();
     } else {
         kinectRes = kinectgrabber.getKinectSize();
@@ -204,12 +187,8 @@ void KinectProjector::exit(ofEventArgs& e)
 void KinectProjector::setupGradientField(){
     gradFieldcols = kinectRes.x / gradFieldResolution;
     gradFieldrows = kinectRes.y / gradFieldResolution;
-    
-    gradField = new ofVec2f[gradFieldcols*gradFieldrows];
-    ofVec2f* gfPtr=gradField;
-    for(unsigned int y=0;y<gradFieldrows;++y)
-        for(unsigned int x=0;x<gradFieldcols;++x,++gfPtr)
-            *gfPtr=ofVec2f(0);
+
+    gradField.assign(gradFieldcols * gradFieldrows, ofVec2f(0));
 }
 
 void KinectProjector::setGradFieldResolution(int sgradFieldResolution){
@@ -1436,6 +1415,7 @@ float KinectProjector::elevationToKinectDepth(float elevation, float x, float y)
 ofVec2f KinectProjector::gradientAtKinectCoord(float x, float y){
     int ind = static_cast<int>(floor(x/gradFieldResolution)) + gradFieldcols*static_cast<int>(floor(y/gradFieldResolution));
     fishInd = ind;
+    if (ind < 0 || ind >= static_cast<int>(gradField.size())) return ofVec2f(0);
     return gradField[ind];
 }
 
@@ -1919,15 +1899,6 @@ bool KinectProjector::loadSettings(){
 	if (auto c = root.getChild("FullFrameFiltering")) doFullFrameFiltering = c.getBoolValue();
     kinectVersion = 1;
     if (auto c = root.getChild("kinectVersion")) kinectVersion = c.getIntValue();
-    // Normalize any persisted V2/Azure selection back to V1: the realtime
-    // pipeline only supports V1 (see setup()), so a stale 2/3 must not
-    // round-trip back into the saved settings.
-    if (kinectVersion != 1) {
-        ofLogWarning("KinectProjector")
-            << "Ignoring unsupported kinectVersion=" << kinectVersion
-            << " from settings; using Kinect V1.";
-        kinectVersion = 1;
-    }
     return true;
 }
 
