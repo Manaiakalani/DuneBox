@@ -167,6 +167,13 @@ jobs:
           Write-Host "--- vcxproj lib references BEFORE patch ---"
           ($raw -split "`r?`n") | Select-String -Pattern 'Kinect20|AdditionalDependencies|AdditionalLibraryDirectories' | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
           $raw = $raw.Replace('Kinect20.lib', $kinectLib)
+          # The OF VS template hardcodes /OPT:REF + /OPT:ICF (<OptimizeReferences>true</...>
+          # + <EnableCOMDATFolding>true</...>) in Release. That dead-code elimination strips
+          # the ofxKinectForWindows2 Device code (and with it the Kinect20.dll import), leaving
+          # a v1-only binary even though the v2 path compiles. Disable both so the addon's
+          # Device::open() -> GetDefaultKinectSensor reference is retained and Kinect v2 works.
+          $raw = $raw -replace '<OptimizeReferences>true</OptimizeReferences>', '<OptimizeReferences>false</OptimizeReferences>'
+          $raw = $raw -replace '<EnableCOMDATFolding>true</EnableCOMDATFolding>', '<EnableCOMDATFolding>false</EnableCOMDATFolding>'
           Set-Content $vcx $raw
           Write-Host "=== DIAG: PreprocessorDefinitions lines in generated vcxproj ==="
           (Get-Content $vcx) | Select-String -Pattern 'PreprocessorDefinitions' | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
@@ -176,6 +183,8 @@ jobs:
           (Get-Content $vcx) | Select-String -Pattern 'ofxKinectForWindows2' | Select-Object -First 6 | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
           Write-Host "=== DIAG: KinectGrabber.cpp ClCompile entry (per-file overrides?) ==="
           (Get-Content $vcx) | Select-String -Pattern 'KinectGrabber.cpp' | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
+          Write-Host "=== DIAG: linker OPT settings (must be false) ==="
+          (Get-Content $vcx) | Select-String -Pattern 'OptimizeReferences|EnableCOMDATFolding' | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) }
           if (-not (Select-String -Path $vcx -Pattern ([regex]::Escape($kinectLib)) -Quiet)) {
             Write-Error "Failed to wire absolute Kinect20.lib path into Magic-Sand.vcxproj"; exit 1
           }
