@@ -1528,28 +1528,12 @@ void KinectProjector::startApplication()
 		return;
 	}
 
-	if (!projKinectCalibrated)
-	{
-		ofLogVerbose("KinectProjector") << "KinectProjector.startApplication(): Kinect projector not calibrated - trying to load calibration.xml";
-		//Try to load calibration file if possible
-		if (kpt->loadCalibration("settings/calibration.xml"))
-		{
-			ofLogVerbose("KinectProjector") << "KinectProjector.setup(): Calibration loaded ";
-			kinectProjMatrix = kpt->getProjectionMatrix();
-			ofLogVerbose("KinectProjector") << "KinectProjector.setup(): kinectProjMatrix: " << kinectProjMatrix;
-			projKinectCalibrated = true;
-			projKinectCalibrationUpdated = true;
-			updateStatusGUI();
-		}
-		else
-		{
-			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): projector/kinect calibration missing or incompatible (settings/calibration.xml). Open the GUI and run 'Automatically calibrate kinect & projector'.";
-			calibrationText = "NOT calibrated - run 'Automatically calibrate kinect & projector'";
-			updateStatusGUI();
-			return;
-		}
-	}
-
+	// Load the ROI / base-plane settings FIRST. They are independent of the
+	// projector calibration, so loading them up front means ROIcalibrated is
+	// set from a valid kinectProjectorSettings.xml even when projector
+	// calibration is missing. That is what makes the GUI's "Automatically
+	// calibrate kinect & projector" action runnable (it early-returns unless
+	// ROIcalibrated is already true).
 	if (!ROIcalibrated)
 	{
 		ofLogVerbose("KinectProjector") << "KinectProjector.startApplication(): Kinect ROI not calibrated - trying to load kinectProjectorSettings.xml";
@@ -1573,8 +1557,33 @@ void KinectProjector::startApplication()
 		}
 		else 
 		{
-			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): kinect ROI / base-plane settings missing (settings/kinectProjectorSettings.xml). Open the GUI and run the ROI + sea-level calibration.";
-			calibrationText = "ROI not set - run ROI + sea-level calibration in the GUI";
+			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): kinect ROI / base-plane settings missing (settings/kinectProjectorSettings.xml). Open the GUI and run 'Full Calibration'.";
+			calibrationText = "ROI not set - run 'Full Calibration' in the GUI";
+			updateStatusGUI();
+			return;
+		}
+	}
+
+	if (!projKinectCalibrated)
+	{
+		ofLogVerbose("KinectProjector") << "KinectProjector.startApplication(): Kinect projector not calibrated - trying to load calibration.xml";
+		//Try to load calibration file if possible
+		if (kpt->loadCalibration("settings/calibration.xml"))
+		{
+			ofLogVerbose("KinectProjector") << "KinectProjector.setup(): Calibration loaded ";
+			kinectProjMatrix = kpt->getProjectionMatrix();
+			ofLogVerbose("KinectProjector") << "KinectProjector.setup(): kinectProjMatrix: " << kinectProjMatrix;
+			projKinectCalibrated = true;
+			projKinectCalibrationUpdated = true;
+			updateStatusGUI();
+		}
+		else
+		{
+			// ROI is already loaded above, so the projector auto-calibration is
+			// now runnable from the GUI. 'Full Calibration' also works and does
+			// ROI + projector in one pass.
+			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): projector/kinect calibration missing or incompatible (settings/calibration.xml). Open the GUI and run 'Automatically calibrate kinect & projector' (or 'Full Calibration').";
+			calibrationText = "Not calibrated - run 'Automatically calibrate kinect & projector'";
 			updateStatusGUI();
 			return;
 		}
