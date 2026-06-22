@@ -115,17 +115,20 @@ bool ofxKinectProjectorToolkit::loadCalibration(string path){
 			<< "loadCalibration(): '" << path << "' was calibrated for projector "
 			<< sprojRes << " / kinect " << skinectRes << ", but this rig is projector "
 			<< projRes << " / kinect " << kinectRes
-			<< ". Ignoring the stale calibration — re-run 'Automatically calibrate kinect & projector'.";
+			<< ". Ignoring the stale calibration - re-run 'Automatically calibrate kinect & projector'.";
 		return false;
 	}
     auto coefficients = calibration.getChild("COEFFICIENTS");
     for (int i=0; i<11; i++) {
         x(i, 0) = coefficients.getChild("COEFF"+ofToString(i)).getFloatValue();
     }
+    // Use the same homogeneous bottom row (0,0,0,1) as the live calibrate()
+    // path above. The two construction sites must stay identical so a loaded
+    // calibration behaves exactly like a freshly-computed one.
     projMatrice = ofMatrix4x4(x(0,0), x(1,0), x(2,0), x(3,0),
                               x(4,0), x(5,0), x(6,0), x(7,0),
                               x(8,0), x(9,0), x(10,0), 1,
-                              0, 0, 0, 0);
+                              0, 0, 0, 1);
     calibrated = true;
     return true;
 }

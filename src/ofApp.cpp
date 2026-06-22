@@ -94,7 +94,7 @@ void ofApp::setup() {
 	// Run startup diagnostics. Pass the real Kinect status from kinectProjector
 	// (set up above) so the report shows the configured v1/v2 sensor correctly
 	// instead of only probing the legacy v1 API. Results are logged to the
-	// console (no blocking on-screen overlay — see Diagnostics.h).
+	// console (no blocking on-screen overlay - see Diagnostics.h).
 	diagnostics.probe(kinectProjector->getKinectVersion(), kinectProjector->isKinectConnected());
 	diagnostics.log();
 
@@ -196,7 +196,7 @@ void ofApp::update() {
 		}
 		else
 		{
-			// No Kinect — use procedural test terrain
+			// No Kinect - use procedural test terrain
 			useTestTerrain = true;
 			generateTestTerrain();
 			ofTexture& testTex = testTerrainFbo.getTexture();
@@ -317,7 +317,7 @@ void ofApp::drawProjWindow(ofEventArgs &args)
 	{
 		sandSurfaceRenderer->drawProjectorWindow();
 
-		// Water overlay — composited on top of terrain, under game layers
+		// Water overlay - composited on top of terrain, under game layers
 		if (waterSimIsEnabled()) {
 			float projW = projWindow->getWidth();
 			float projH = projWindow->getHeight();
@@ -329,7 +329,7 @@ void ofApp::drawProjWindow(ofEventArgs &args)
 	}
 	else if (useTestTerrain && waterSimIsEnabled())
 	{
-		// No Kinect running — still show water on test terrain
+		// No Kinect running - still show water on test terrain
 		float projW = projWindow->getWidth();
 		float projH = projWindow->getHeight();
 		ofSetColor(40, 30, 20); // Dark brown background for test terrain
@@ -560,7 +560,7 @@ void ofApp::dragEvent(ofDragInfo dragInfo) {
 
 }
 
-// ─── Water simulation helpers ───────────────────────────────────────
+// --- Water simulation helpers ---------------------------------------
 
 void ofApp::generateTestTerrain() {
 	testTerrainFbo.begin();
@@ -608,9 +608,9 @@ void ofApp::detectRainGesture() {
 
 	// Threshold-based rain detection: scan a coarse grid of the depth image.
 	// Pixels with elevation > rainThreshold (mm above base plane) are treated
-	// as a hand — add water at those kinect-space coordinates.
+	// as a hand - add water at those kinect-space coordinates.
 	const float rainThreshold = 50.0f; // mm above base plane = hand
-	const int step = 8; // sample every 8th pixel (80×60 grid)
+	const int step = 8; // sample every 8th pixel (80x60 grid)
 
 	ofVec2f kinectRes = kinectProjector->getKinectRes();
 	ofRectangle roi = kinectProjector->getKinectROI();
@@ -634,24 +634,24 @@ void ofApp::detectRainGesture() {
 	}
 }
 
-// ─── Unified water simulation accessors ─────────────────────────────
+// --- Unified water simulation accessors -----------------------------
 
 void ofApp::waterSimSetup(int w, int h) {
 	// Auto-detect compute shader support (requires GL 4.3+)
 	useComputeWaterSim = ComputeWaterSimulation::isComputeSupported();
 
 	if (useComputeWaterSim) {
-		ofLogNotice("ofApp") << "GL 4.3+ detected — using COMPUTE SHADER water simulation";
+		ofLogNotice("ofApp") << "GL 4.3+ detected - using COMPUTE SHADER water simulation";
 		waterSimCompute.setup(w, h);
 		// setup() can fail (e.g. a compute shader fails to compile/link). Don't
-		// silently run a no-op water sim — fall back to the fragment path.
+		// silently run a no-op water sim - fall back to the fragment path.
 		if (!waterSimCompute.isInitialized()) {
-			ofLogError("ofApp") << "Compute water simulation failed to initialize — falling back to FRAGMENT SHADER water simulation";
+			ofLogError("ofApp") << "Compute water simulation failed to initialize - falling back to FRAGMENT SHADER water simulation";
 			useComputeWaterSim = false;
 			waterSimFragment.setup(w, h);
 		}
 	} else {
-		ofLogNotice("ofApp") << "GL < 4.3 — using FRAGMENT SHADER water simulation (fallback)";
+		ofLogNotice("ofApp") << "GL < 4.3 - using FRAGMENT SHADER water simulation (fallback)";
 		waterSimFragment.setup(w, h);
 	}
 }

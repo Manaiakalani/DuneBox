@@ -1,5 +1,5 @@
 /***********************************************************************
-Diagnostics.h — startup hardware diagnostics report
+Diagnostics.h - startup hardware diagnostics report
 
 Probes Kinect, GPU, OpenGL, displays, shader compilation, and settings
 files at launch and prints the results to the console log. It deliberately

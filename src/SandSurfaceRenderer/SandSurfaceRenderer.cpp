@@ -532,7 +532,7 @@ void SandSurfaceRenderer::onSaveModalEvent(ofxModalEvent e){
 }
 
 
-// ─── Color Theme (biome mode) ────────────────────────────────────────
+// --- Color Theme (biome mode) ----------------------------------------
 
 void SandSurfaceRenderer::applyThemeToHeightMap() {
     const ColorTheme& theme = themeManager.getCurrentTheme();

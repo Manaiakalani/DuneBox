@@ -85,7 +85,7 @@ void CMapGameController::setup(std::shared_ptr<KinectProjector> const& k)
 
 		// Hi-score files only exist once a game has been played and saved.
 		// Skip loading (and the resulting "file not found" warning spam) when
-		// the file is absent — the tracker stays empty, exactly as it would
+		// the file is absent - the tracker stays empty, exactly as it would
 		// after a failed load.
 		if (ofFile::doesFileExist(scoreFileNames[i]))
 		{

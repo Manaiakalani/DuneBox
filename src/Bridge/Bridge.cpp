@@ -1,12 +1,12 @@
 /***********************************************************************
-Bridge.cpp — inter-app communication bridge (TCP/JSON)
+Bridge.cpp - inter-app communication bridge (TCP/JSON)
 
 This file is part of DuneBox, a fork of Magic Sand.
 ***********************************************************************/
 
 // Socket headers must come first.  On Windows, <winsock2.h> must precede any
 // inclusion of <windows.h> (which ofMain.h, included via Bridge.h below, pulls
-// in) — winsock2.h defines _WINSOCKAPI_ so windows.h then skips the legacy
+// in) - winsock2.h defines _WINSOCKAPI_ so windows.h then skips the legacy
 // winsock.h, avoiding the winsock 1.1 / 2 redefinition conflict.  This is the
 // only translation unit that touches winsock2.
 #ifdef _WIN32
@@ -24,7 +24,7 @@ This file is part of DuneBox, a fork of Magic Sand.
 
 #include "Bridge.h"
 
-// ── helpers ──────────────────────────────────────────────────────────
+// -- helpers ----------------------------------------------------------
 
 static void closeSock(SocketHandle& s) {
     if (s == INVALID_SOCK) return;
@@ -36,7 +36,7 @@ static void closeSock(SocketHandle& s) {
     s = INVALID_SOCK;
 }
 
-// ── lifecycle ────────────────────────────────────────────────────────
+// -- lifecycle --------------------------------------------------------
 
 Bridge::Bridge() {}
 
@@ -71,7 +71,7 @@ void Bridge::setup(std::string host_, int port_) {
     tryConnect();
 }
 
-// ── connection management ────────────────────────────────────────────
+// -- connection management --------------------------------------------
 
 void Bridge::tryConnect() {
     if (connected || !enabled) return;
@@ -132,7 +132,7 @@ bool Bridge::setNonBlocking(SocketHandle s) {
 #endif
 }
 
-// ── per-frame update ─────────────────────────────────────────────────
+// -- per-frame update -------------------------------------------------
 
 void Bridge::update() {
     if (!enabled) return;
@@ -146,7 +146,7 @@ void Bridge::update() {
     flushOutgoing();
 }
 
-// ── send ─────────────────────────────────────────────────────────────
+// -- send -------------------------------------------------------------
 
 void Bridge::send(const std::string& type, const ofJson& data) {
     if (!enabled) return;
@@ -158,7 +158,7 @@ void Bridge::send(const std::string& type, const ofJson& data) {
 
     std::lock_guard<std::mutex> lock(sendMtx);
     sendQueue.push_back(std::move(line));
-    // Bound the backlog. When over the cap, drop the oldest message — but never
+    // Bound the backlog. When over the cap, drop the oldest message - but never
     // the front if it is mid-transmission (sendOffset > 0), as its head bytes
     // are already on the wire; drop the next one instead to avoid corrupting it.
     while (sendQueue.size() > MAX_SEND_QUEUE) {
@@ -185,7 +185,7 @@ void Bridge::flushOutgoing() {
 #else
             if (errno == EAGAIN || errno == EWOULDBLOCK) return;
 #endif
-            ofLogWarning("Bridge") << "Send failed — disconnecting";
+            ofLogWarning("Bridge") << "Send failed - disconnecting";
             disconnect();
             return;
         }
@@ -200,7 +200,7 @@ void Bridge::flushOutgoing() {
     }
 }
 
-// ── receive ──────────────────────────────────────────────────────────
+// -- receive ----------------------------------------------------------
 
 void Bridge::readIncoming() {
     char buf[4096];
@@ -215,7 +215,7 @@ void Bridge::readIncoming() {
                 recvBuf.find('\n') == std::string::npos) {
                 ofLogWarning("Bridge")
                     << "recv buffer exceeded " << MAX_RECV_BUF
-                    << " bytes without a newline — disconnecting";
+                    << " bytes without a newline - disconnecting";
                 recvBuf.clear();
                 disconnect();
                 return;
@@ -231,7 +231,7 @@ void Bridge::readIncoming() {
 #else
             if (errno == EAGAIN || errno == EWOULDBLOCK) break;
 #endif
-            ofLogWarning("Bridge") << "recv error — disconnecting";
+            ofLogWarning("Bridge") << "recv error - disconnecting";
             disconnect();
             return;
         }
@@ -269,7 +269,7 @@ void Bridge::readIncoming() {
     }
 }
 
-// ── poll ─────────────────────────────────────────────────────────────
+// -- poll -------------------------------------------------------------
 
 std::vector<ofJson> Bridge::poll() {
     std::lock_guard<std::mutex> lock(recvMtx);

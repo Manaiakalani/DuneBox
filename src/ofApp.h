@@ -62,7 +62,7 @@ private:
 	CMapGameController mapGameController;
 	CBoidGameController boidGameController;
 
-	// Water simulation — auto-selects compute (GL 4.3+) or fragment (GL 3.2) path
+	// Water simulation - auto-selects compute (GL 4.3+) or fragment (GL 3.2) path
 	WaterSimulation waterSimFragment;
 	ComputeWaterSimulation waterSimCompute;
 	bool useComputeWaterSim;       // True if compute shader path is active
@@ -100,7 +100,7 @@ private:
 	float volcanoSourceX = 0.0f;
 	float volcanoSourceY = 0.0f;
 
-	// Inter-app bridge (Python ↔ C++)
+	// Inter-app bridge (Python <-> C++)
 	Bridge bridge;
 	int bridgeFrameCounter = 0;
 

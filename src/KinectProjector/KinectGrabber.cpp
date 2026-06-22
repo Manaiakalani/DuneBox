@@ -78,7 +78,7 @@ bool KinectGrabber::setup(){
 		kinectV2Device.setUseTextures(false);
 		kinectV2Device.open();
 		if (!kinectV2Device.isOpen()) {
-			ofLogError("kinectGrabber") << "Kinect v2 could not be opened — it may be in use by another app "
+			ofLogError("kinectGrabber") << "Kinect v2 could not be opened - it may be in use by another app "
 				"(close the Python DuneBox-sandcam or any other Magic-Sand instance) or disconnected. "
 				"Will keep retrying.";
 			kinectV2Depth = nullptr;

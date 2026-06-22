@@ -137,7 +137,7 @@ namespace ofxCSG
 		
 		if ( denom == 0 )
 		{
-			// Degenerate triangle (zero area) — return false with zeroed coords
+			// Degenerate triangle (zero area) - return false with zeroed coords
 			u = v = w = 0;
 			return false;
 		}
@@ -158,7 +158,7 @@ namespace ofxCSG
 	}
     
     static ofVec4f getPlaneEquation(ofVec3f basePlanePos, ofVec3f basePlaneNormal){
-        ofVec4f basePlaneEq = basePlaneNormal/basePlaneNormal.length(); // Vecteur normal au plan normalisé
+        ofVec4f basePlaneEq = basePlaneNormal/basePlaneNormal.length(); // Vecteur normal au plan normalise
         basePlaneEq.w=-basePlaneNormal.dot(basePlanePos);
         return basePlaneEq;
     }

@@ -1,5 +1,5 @@
 /***********************************************************************
-Bridge.h — inter-app communication bridge (TCP/JSON)
+Bridge.h - inter-app communication bridge (TCP/JSON)
 
 Connects DuneBox (C++) to DuneBox-sandcam (Python) via a TCP socket
 using newline-delimited JSON (NDJSON).  The C++ side acts as a TCP
@@ -42,7 +42,7 @@ public:
     /// Connect to the Python bridge server.
     void setup(std::string host = "127.0.0.1", int port = 9876);
 
-    /// Call every frame — reads incoming data, handles reconnect.
+    /// Call every frame - reads incoming data, handles reconnect.
     void update();
 
     /// Send a typed JSON message.  Extra fields are merged into the
