@@ -1264,6 +1264,15 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 
 	if (displayGui)
 	{
+		// Re-anchor every frame in the main-window draw context. ofxDatGui only
+		// computes anchor positions at construction (and on a resize event that
+		// setAutoDraw(false) unregisters). In this two-window app the panels were
+		// anchored against the wrong window's size / before their widgets existed
+		// (the BOTTOM_LEFT status panel was placed with height 0), landing them
+		// off-screen. drawMainWindow() runs with the main window current and after
+		// all widgets are added, so re-anchoring here positions them correctly.
+		gui->setPosition(ofxDatGuiAnchor::TOP_RIGHT);
+		StatusGUI->setPosition(ofxDatGuiAnchor::BOTTOM_LEFT);
 		gui->draw();
 		StatusGUI->draw();
 	}

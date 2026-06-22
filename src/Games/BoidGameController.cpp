@@ -309,6 +309,9 @@ void CBoidGameController::DrawFinalScoresOnFBO()
 void CBoidGameController::drawMainWindow(float x, float y, float width, float height) 
 {
 	fboVehicles.draw(x, y, width, height);
+	// Re-anchor in the draw context so the panel tracks the live main-window size
+	// (ofxDatGui only anchors at construction; setAutoDraw(false) drops the resize hook).
+	gui->setPosition(ofxDatGuiAnchor::BOTTOM_RIGHT);
 	gui->draw();
 }
 
