@@ -293,6 +293,22 @@ void ofApp::draw()
 		ofDrawBitmapString(themeDisplayName, cx, cy);
 		ofSetColor(255);
 	}
+
+	// Normalise the ambient GL draw state for the ofxModal overlay. The
+	// calibration flow (askToFlattenSand / "cover the sandbox with a board")
+	// drives ofxModalWindow, which renders itself as an AFTER_APP draw listener
+	// - i.e. AFTER this draw() returns and OUTSIDE KinectProjector's
+	// beginGuiDrawState() normalisation. ofxModalWindow::onDraw does
+	// ofPushStyle()/ofFill() but never sets depth-test/alpha-blending, so it
+	// inherits whatever the preceding FBO / compute-water / sand draws left
+	// behind. On this GL 4.3 core-profile build that meant the modal's
+	// translucent blackout and panels could render with depth test on / alpha
+	// blending off (invisible or opaque-black), so the calibration prompts the
+	// operator must click never appeared. Leave a clean 2D state here; the
+	// renderer resets per frame so this does not affect anything else.
+	ofDisableDepthTest();
+	ofEnableAlphaBlending();
+	ofSetColor(255);
 }
 
 void ofApp::drawProjWindow(ofEventArgs &args) 
