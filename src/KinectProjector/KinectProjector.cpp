@@ -1273,6 +1273,15 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 		// all widgets are added, so re-anchoring here positions them correctly.
 		gui->setPosition(ofxDatGuiAnchor::TOP_RIGHT);
 		StatusGUI->setPosition(ofxDatGuiAnchor::BOTTOM_LEFT);
+		static bool guiDiagLogged = false;
+		if (!guiDiagLogged) {
+			guiDiagLogged = true;
+			ofLogNotice("KinectProjector") << "GUIDIAG ofGetWidth=" << ofGetWidth() << " ofGetHeight=" << ofGetHeight()
+				<< " | gui pos=" << gui->getPosition() << " w=" << gui->getWidth() << " h=" << gui->getHeight()
+				<< " vis=" << gui->getVisible()
+				<< " | status pos=" << StatusGUI->getPosition() << " w=" << StatusGUI->getWidth() << " h=" << StatusGUI->getHeight()
+				<< " vis=" << StatusGUI->getVisible();
+		}
 		gui->draw();
 		StatusGUI->draw();
 	}
