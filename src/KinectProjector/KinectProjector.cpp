@@ -1266,7 +1266,9 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 	// (1) RAW (no fence) red rect at CENTER: does drawMainWindow's raw context draw at all?
 	ofFill();
 	ofSetColor(255, 0, 0);
-	ofDrawRectangle(ofGetWidth()/2 - 300, ofGetHeight()/2 - 100, 200, 200);
+	float rcx = ofGetWidth()/2 - 300;
+	float rcy = ofGetHeight()/2 - 100;
+	ofDrawRectangle(rcx, rcy, 200, 200);
 	// (2) RAW (no fence) yellow rect at the CTRL gui position: position-dependent?
 	ofSetColor(255, 255, 0);
 	ofDrawRectangle(3826, 0, 270, 164);
@@ -1289,6 +1291,23 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 				<< " depth=" << (int)depthTest << " scissorEnabled=" << (int)scissTest
 				<< " scissor=[" << sciss[0] << "," << sciss[1] << "," << sciss[2] << "," << sciss[3] << "]"
 				<< " blend=" << (int)blend << " glErr=" << err;
+			// Read back the pixel at the red rect's center directly from the backbuffer.
+			// vp[3]=height; glReadPixels origin is bottom-left, so flip Y.
+			unsigned char px[4] = {0,0,0,0};
+			int readX = (int)(rcx + 100);
+			int readY = vp[3] - (int)(rcy + 100);
+			glReadPixels(readX, readY, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, px);
+			ofLogNotice("GUIDIAG3") << "readback at red-center (" << readX << "," << readY << ") = "
+				<< (int)px[0] << "," << (int)px[1] << "," << (int)px[2] << "," << (int)px[3];
+			// Dump OF's current projection & modelview matrices.
+			ofMatrix4x4 proj = ofGetCurrentMatrix(OF_MATRIX_PROJECTION);
+			ofMatrix4x4 mv = ofGetCurrentMatrix(OF_MATRIX_MODELVIEW);
+			const float* pm = proj.getPtr();
+			const float* mm = mv.getPtr();
+			ofLogNotice("GUIDIAG3") << "PROJ row0=[" << pm[0] << "," << pm[4] << "," << pm[8] << "," << pm[12]
+				<< "] row1=[" << pm[1] << "," << pm[5] << "," << pm[9] << "," << pm[13] << "]";
+			ofLogNotice("GUIDIAG3") << "MV row0=[" << mm[0] << "," << mm[4] << "," << mm[8] << "," << mm[12]
+				<< "] row1=[" << mm[1] << "," << mm[5] << "," << mm[9] << "," << mm[13] << "]";
 			gd3++;
 		}
 	}
