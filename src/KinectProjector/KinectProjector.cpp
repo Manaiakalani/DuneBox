@@ -1262,6 +1262,16 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 		fboMainWindow.draw(x, y);
 	}
 
+	// --- GUIDIAG2: isolate draw context ---
+	// (1) RAW (no fence) red rect at CENTER: does drawMainWindow's raw context draw at all?
+	ofFill();
+	ofSetColor(255, 0, 0);
+	ofDrawRectangle(ofGetWidth()/2 - 300, ofGetHeight()/2 - 100, 200, 200);
+	// (2) RAW (no fence) yellow rect at the CTRL gui position: position-dependent?
+	ofSetColor(255, 255, 0);
+	ofDrawRectangle(3826, 0, 270, 164);
+	ofSetColor(255);
+
 	if (displayGui)
 	{
 		// Re-anchor every frame in the main-window draw context. ofxDatGui only
@@ -1302,6 +1312,9 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 			ofDrawRectangle(gui->getPosition().x, gui->getPosition().y, gui->getWidth(), gui->getHeight());
 			ofSetColor(0, 255, 0);
 			ofDrawRectangle(StatusGUI->getPosition().x, StatusGUI->getPosition().y, StatusGUI->getWidth(), StatusGUI->getHeight());
+			// (3) FENCE cyan rect at CENTER: does the fence itself break drawing?
+			ofSetColor(0, 255, 255);
+			ofDrawRectangle(ofGetWidth()/2 + 50, ofGetHeight()/2 - 100, 200, 200);
 			ofSetColor(255);
 		}
 		gui->draw();
