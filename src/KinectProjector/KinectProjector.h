@@ -62,6 +62,8 @@ public:
     void updateNativeScale(float scaleMin, float scaleMax);
     void drawProjectorWindow();
     void drawMainWindow(float x, float y, float width, float height);
+    void beginGuiDrawState();
+    void endGuiDrawState();
     void drawGradField();
 
     // Coordinate conversion functions
