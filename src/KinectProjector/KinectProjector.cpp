@@ -1273,13 +1273,14 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 		// all widgets are added, so re-anchoring here positions them correctly.
 		gui->setPosition(ofxDatGuiAnchor::TOP_RIGHT);
 		StatusGUI->setPosition(ofxDatGuiAnchor::BOTTOM_LEFT);
-		// ofxDatGui is an OF-0.9-era addon drawn manually right after FBO/texture
-		// draws. On this GL 4.3 core-profile / programmable-renderer build the
-		// inherited GL state (viewport clamped to the small main FBO, depth test,
-		// disabled alpha blending) left the panels rendering as black rectangles
-		// with garbled text. Re-establish a clean full-window 2D draw state before
-		// drawing so ofxDatGui's ofDrawRectangle / ofTrueTypeFont batches render
-		// correctly. Kept GL 4.3 (compute water sim depends on it).
+		// ofxDatGui is an OF-0.9-era addon drawn manually right after the FBO
+		// draw. Only normalise the *render state* it depends on (no depth test,
+		// alpha blending on, solid fill, full colour) - do NOT touch the
+		// projection / viewport. The main window's existing draw context already
+		// has the correct full-window viewport and screen matrices; overriding
+		// them with ofPushView + ofSetupScreenOrtho in this two-window shared GL
+		// context skewed every ofDrawRectangle / ofTrueTypeFont batch into
+		// diagonal streaks (the panels rendered black with garbled text).
 		beginGuiDrawState();
 		gui->draw();
 		StatusGUI->draw();
@@ -1287,13 +1288,13 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 	}
 }
 
-// Re-establish OF's default full-window 2D draw state so the manually-drawn
-// ofxDatGui panels render correctly regardless of any GL state left behind by
-// the preceding FBO / texture / compute draws in this GL 4.3 core-profile build.
+// Normalise only the render state the manually-drawn ofxDatGui panels rely on
+// (depth test off, alpha blending on, solid fill, full colour). Deliberately
+// does NOT call ofPushView / ofViewport / ofSetupScreenOrtho: the main window's
+// current draw context already has the correct full-window viewport and screen
+// matrices, and overriding them in this GL 4.3 two-window shared context skewed
+// the panels' geometry into diagonal streaks.
 void KinectProjector::beginGuiDrawState(){
-	ofPushView();
-	ofViewport(0, 0, ofGetWidth(), ofGetHeight());
-	ofSetupScreenOrtho(ofGetWidth(), ofGetHeight(), -1, 1);
 	ofPushStyle();
 	ofDisableDepthTest();
 	ofEnableAlphaBlending();
@@ -1303,7 +1304,6 @@ void KinectProjector::beginGuiDrawState(){
 
 void KinectProjector::endGuiDrawState(){
 	ofPopStyle();
-	ofPopView();
 }
 
 void KinectProjector::drawChessboard(int x, int y, int chessboardSize) {
