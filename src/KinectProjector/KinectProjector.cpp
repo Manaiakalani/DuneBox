@@ -1557,8 +1557,8 @@ void KinectProjector::startApplication()
 		}
 		else 
 		{
-			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): kinect ROI / base-plane settings missing (settings/kinectProjectorSettings.xml). Open the GUI and run 'Full Calibration'.";
-			calibrationText = "ROI not set - run 'Full Calibration' in the GUI";
+			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): kinect ROI / base-plane settings missing (settings/kinectProjectorSettings.xml). Open the GUI 'Calibration' folder and run 'Manually define sand region'.";
+			calibrationText = "ROI not set - run 'Manually define sand region' in the GUI";
 			updateStatusGUI();
 			return;
 		}
@@ -1580,9 +1580,8 @@ void KinectProjector::startApplication()
 		else
 		{
 			// ROI is already loaded above, so the projector auto-calibration is
-			// now runnable from the GUI. 'Full Calibration' also works and does
-			// ROI + projector in one pass.
-			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): projector/kinect calibration missing or incompatible (settings/calibration.xml). Open the GUI and run 'Automatically calibrate kinect & projector' (or 'Full Calibration').";
+			// now runnable from the GUI 'Calibration' folder.
+			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): projector/kinect calibration missing or incompatible (settings/calibration.xml). Open the GUI 'Calibration' folder and run 'Automatically calibrate kinect & projector'.";
 			calibrationText = "Not calibrated - run 'Automatically calibrate kinect & projector'";
 			updateStatusGUI();
 			return;
