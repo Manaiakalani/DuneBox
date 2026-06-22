@@ -1281,6 +1281,29 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 		// drawing so ofxDatGui's ofDrawRectangle / ofTrueTypeFont batches render
 		// correctly. Kept GL 4.3 (compute water sim depends on it).
 		beginGuiDrawState();
+		// --- GUIDIAG PROBE (diag/gui-probe branch only) ---
+		// Decisive experiment: draw bright reference rectangles at each gui's
+		// EXACT reported position+size, inside the same state fence, immediately
+		// before gui->draw(). If the probe shows but the panel does not, the
+		// failure is INTERNAL to ofxDatGui's draw (colors/font/mesh), not the
+		// surrounding GL/viewport/clip state. Also log the geometry once.
+		{
+			static int guidiagN = 0;
+			if (guidiagN < 3) {
+				ofLogNotice("GUIDIAG") << "ofW=" << ofGetWidth() << " ofH=" << ofGetHeight();
+				ofLogNotice("GUIDIAG") << "ctrl pos=(" << gui->getPosition().x << "," << gui->getPosition().y
+					<< ") w=" << gui->getWidth() << " h=" << gui->getHeight() << " visible=" << gui->getVisible();
+				ofLogNotice("GUIDIAG") << "stat pos=(" << StatusGUI->getPosition().x << "," << StatusGUI->getPosition().y
+					<< ") w=" << StatusGUI->getWidth() << " h=" << StatusGUI->getHeight() << " visible=" << StatusGUI->getVisible();
+				guidiagN++;
+			}
+			ofFill();
+			ofSetColor(255, 0, 255);
+			ofDrawRectangle(gui->getPosition().x, gui->getPosition().y, gui->getWidth(), gui->getHeight());
+			ofSetColor(0, 255, 0);
+			ofDrawRectangle(StatusGUI->getPosition().x, StatusGUI->getPosition().y, StatusGUI->getWidth(), StatusGUI->getHeight());
+			ofSetColor(255);
+		}
 		gui->draw();
 		StatusGUI->draw();
 		endGuiDrawState();
