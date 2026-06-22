@@ -145,7 +145,7 @@ private:
     // --- Parameters ---
     float gravity;          // Gravitational acceleration (default 9.81)
     float attenuation;      // Momentum damping per second (default 0.99)
-    float theta;            // Minmod limiter parameter, 1.0–2.0 (default 1.5)
+    float theta;            // Minmod limiter parameter, 1.0-2.0 (default 1.5)
     float epsilon;          // Desingularization coefficient (default 0.01)
     float cellSize;         // Physical cell size in world units (default 1.0)
     float waterOpacity;     // Rendering opacity scale (default 5.0)

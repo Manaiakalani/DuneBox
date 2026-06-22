@@ -1,5 +1,5 @@
 /***********************************************************************
-KinectV2Handler — Wrapper for Kinect V2 (Xbox One) via ofxKinectV2 or
+KinectV2Handler - Wrapper for Kinect V2 (Xbox One) via ofxKinectV2 or
 ofxLibfreenect2 addon.
 
 This provides the same interface expected by KinectProjector so that
@@ -71,7 +71,7 @@ private:
 
 #else
 
-// Stub when not compiled with V2 support — produces clear error at runtime
+// Stub when not compiled with V2 support - produces clear error at runtime
 class KinectV2Handler {
 public:
     KinectV2Handler() {}

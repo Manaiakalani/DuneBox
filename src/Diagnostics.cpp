@@ -1,5 +1,5 @@
 /***********************************************************************
-Diagnostics.cpp — startup hardware diagnostics report
+Diagnostics.cpp - startup hardware diagnostics report
 
 This file is part of DuneBox, a fork of Magic Sand.
 ***********************************************************************/
@@ -13,16 +13,16 @@ This file is part of DuneBox, a fork of Magic Sand.
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-// ── Probing ──────────────────────────────────────────────────────────────────
+// -- Probing ------------------------------------------------------------------
 
 static DiagnosticItem probeKinect(int kinectVersion, bool kinectConnected) {
     if (kinectVersion == 2) {
         if (kinectConnected)
             return {"Kinect", "v2 connected", DiagnosticItem::OK};
-        return {"Kinect", "v2 not opened — may be in use by another app", DiagnosticItem::ERR};
+        return {"Kinect", "v2 not opened - may be in use by another app", DiagnosticItem::ERR};
     }
     if (kinectVersion == 3) {
-        return {"Kinect", "Azure (v3) — unsupported in this build", DiagnosticItem::WARN};
+        return {"Kinect", "Azure (v3) - unsupported in this build", DiagnosticItem::WARN};
     }
     // Kinect v1 (ofxKinect / libfreenect)
     int n = ofxKinect::numConnectedDevices();
@@ -34,7 +34,7 @@ static DiagnosticItem probeKinect(int kinectVersion, bool kinectConnected) {
 static DiagnosticItem probeGPU() {
     std::string vendor   = (const char*)glGetString(GL_VENDOR);
     std::string renderer = (const char*)glGetString(GL_RENDERER);
-    return {"GPU", vendor + " — " + renderer, DiagnosticItem::OK};
+    return {"GPU", vendor + " - " + renderer, DiagnosticItem::OK};
 }
 
 static DiagnosticItem probeOpenGL() {
@@ -49,7 +49,7 @@ static DiagnosticItem probeDisplay() {
     if (count > 0 && monitors) {
         const GLFWvidmode* mode = glfwGetVideoMode(monitors[0]);
         if (mode) {
-            detail += " — primary " + std::to_string(mode->width) + "x" + std::to_string(mode->height);
+            detail += " - primary " + std::to_string(mode->width) + "x" + std::to_string(mode->height);
         }
     }
     auto status = count >= 2 ? DiagnosticItem::OK : DiagnosticItem::WARN;
@@ -64,15 +64,15 @@ static DiagnosticItem probeWaterShaders() {
     int major = 0;
     if (!ver.empty()) major = ver[0] - '0';
     if (major >= 3)
-        return {"Water shaders", "GL " + ver.substr(0, 3) + " — supported", DiagnosticItem::OK};
-    return {"Water shaders", "GL " + ver.substr(0, 3) + " — may not support #version 150", DiagnosticItem::WARN};
+        return {"Water shaders", "GL " + ver.substr(0, 3) + " - supported", DiagnosticItem::OK};
+    return {"Water shaders", "GL " + ver.substr(0, 3) + " - may not support #version 150", DiagnosticItem::WARN};
 }
 
 static DiagnosticItem probeSettingsFile(const std::string& path, const std::string& label) {
     std::ifstream f(ofToDataPath(path));
     if (f.good())
         return {label, "found", DiagnosticItem::OK};
-    return {label, "not found — will use defaults", DiagnosticItem::WARN};
+    return {label, "not found - will use defaults", DiagnosticItem::WARN};
 }
 
 void Diagnostics::probe(int kinectVersion, bool kinectConnected) {

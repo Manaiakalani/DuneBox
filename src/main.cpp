@@ -86,13 +86,13 @@ int main() {
 	}
 
 	if (!mainWindow || mainWindow->getWindowSize().x == 0) {
-		// GL 4.3 failed — fall back to GL 3.2
+		// GL 4.3 failed - fall back to GL 3.2
 		ofLogNotice("main") << "GL 4.3 not available, falling back to GL 3.2";
 		useGL43 = false;
 		settings.setGLVersion(3, 2);
 		mainWindow = ofCreateWindow(settings);
 	} else {
-		ofLogNotice("main") << "GL 4.3 context created — compute shaders available";
+		ofLogNotice("main") << "GL 4.3 context created - compute shaders available";
 	}
     
 	setWindowDimensions(settings, 0);

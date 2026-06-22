@@ -1,5 +1,5 @@
 /***********************************************************************
-AzureKinectHandler — Wrapper for Azure Kinect DK and Orbbec Femto Bolt
+AzureKinectHandler - Wrapper for Azure Kinect DK and Orbbec Femto Bolt
 via the ofxAzureKinect addon.
 
 The Orbbec Femto Bolt is hardware-compatible with the Azure Kinect SDK,
@@ -20,12 +20,12 @@ Build instructions:
   5. Rebuild the project
 
 Depth modes:
-  - NFOV Unbinned: 640×576, range 0.5–3.86 m (best for sandbox)
-  - NFOV 2x2 Binned: 320×288, range 0.5–5.46 m
-  - WFOV Unbinned: 1024×1024, range 0.25–2.21 m
-  - WFOV 2x2 Binned: 512×512, range 0.25–2.88 m
+  - NFOV Unbinned: 640x576, range 0.5-3.86 m (best for sandbox)
+  - NFOV 2x2 Binned: 320x288, range 0.5-5.46 m
+  - WFOV Unbinned: 1024x1024, range 0.25-2.21 m
+  - WFOV 2x2 Binned: 512x512, range 0.25-2.88 m
 
-Recommended for DuneBox: NFOV Unbinned (640×576)
+Recommended for DuneBox: NFOV Unbinned (640x576)
 
 Copyright (c) 2025 Manaiakalani
 Licensed under GPL-2.0 (same as parent project).
@@ -52,7 +52,7 @@ public:
     bool isConnected() const { return connected; }
     bool isFrameNew() const { return frameNew; }
 
-    /// Default NFOV Unbinned: 640×576
+    /// Default NFOV Unbinned: 640x576
     ofVec2f getDepthResolution() const { return ofVec2f(depthWidth, depthHeight); }
     unsigned int getWidth() const { return depthWidth; }
     unsigned int getHeight() const { return depthHeight; }
@@ -60,7 +60,7 @@ public:
     /// Raw depth pixels (uint16, millimetres)
     ofShortPixels& getRawDepthPixels() { return depthPixels; }
 
-    /// Colour pixels (1920×1080 or 3840×2160 depending on config)
+    /// Colour pixels (1920x1080 or 3840x2160 depending on config)
     ofPixels& getColorPixels() { return colorPixels; }
 
     /// Float depth for filter pipeline

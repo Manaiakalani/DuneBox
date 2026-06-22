@@ -1,5 +1,5 @@
 /***********************************************************************
-AzureKinectHandler — Implementation for Azure Kinect DK / Orbbec Femto Bolt.
+AzureKinectHandler - Implementation for Azure Kinect DK / Orbbec Femto Bolt.
 
 Requires ofxAzureKinect addon and Azure Kinect SDK.
 Only compiled when DUNEBOX_USE_AZURE_KINECT is defined.
@@ -22,7 +22,7 @@ AzureKinectHandler::~AzureKinectHandler() {
 }
 
 bool AzureKinectHandler::setup() {
-    // Configure for NFOV Unbinned mode (640×576) — best for sandbox use
+    // Configure for NFOV Unbinned mode (640x576) - best for sandbox use
     ofxAzureKinect::DeviceSettings settings;
     settings.depthMode = K4A_DEPTH_MODE_NFOV_UNBINNED;
     settings.colorResolution = K4A_COLOR_RESOLUTION_1080P;
@@ -92,7 +92,7 @@ ofFloatPixels& AzureKinectHandler::getDepthPixelsFloat() {
 }
 
 ofMatrix4x4 AzureKinectHandler::getWorldMatrix() {
-    // Identity — calibration system handles world transform
+    // Identity - calibration system handles world transform
     return ofMatrix4x4();
 }
 

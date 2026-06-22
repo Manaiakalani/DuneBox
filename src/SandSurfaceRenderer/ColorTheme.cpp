@@ -48,7 +48,7 @@ int ColorThemeManager::cycleTheme() {
 void ColorThemeManager::buildThemes() {
     themes.clear();
 
-    // ── 1. Topo (default) ── classic terrain: ocean → green → brown → snow
+    // -- 1. Topo (default) -- classic terrain: ocean -> green -> brown -> snow
     {
         ColorTheme t;
         t.name = "Topo";
@@ -77,7 +77,7 @@ void ColorThemeManager::buildThemes() {
         themes.push_back(t);
     }
 
-    // ── 2. Ocean ── deep sea blues, coral mid-tones, white foam peaks
+    // -- 2. Ocean -- deep sea blues, coral mid-tones, white foam peaks
     {
         ColorTheme t;
         t.name = "Ocean";
@@ -106,7 +106,7 @@ void ColorThemeManager::buildThemes() {
         themes.push_back(t);
     }
 
-    // ── 3. Volcanic ── dark basalt, red-orange lava glow at low elevations
+    // -- 3. Volcanic -- dark basalt, red-orange lava glow at low elevations
     {
         ColorTheme t;
         t.name = "Volcanic";
@@ -135,7 +135,7 @@ void ColorThemeManager::buildThemes() {
         themes.push_back(t);
     }
 
-    // ── 4. Ice Age ── whites, light blues, frozen tundra
+    // -- 4. Ice Age -- whites, light blues, frozen tundra
     {
         ColorTheme t;
         t.name = "Ice Age";
@@ -164,7 +164,7 @@ void ColorThemeManager::buildThemes() {
         themes.push_back(t);
     }
 
-    // ── 5. Alien ── purples, teals, neon green water
+    // -- 5. Alien -- purples, teals, neon green water
     {
         ColorTheme t;
         t.name = "Alien";

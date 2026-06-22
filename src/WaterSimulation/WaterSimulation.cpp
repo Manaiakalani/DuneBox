@@ -6,9 +6,9 @@ Implements the per-frame simulation loop:
   1. Update bathymetry from new depth data
   2. RK2 integration loop (predictor + corrector):
      a. Compute derivative from current state
-     b. Euler half-step → intermediate state q*
+     b. Euler half-step -> intermediate state q*
      c. Compute derivative from q*
-     d. RK2 corrector → final state
+     d. RK2 corrector -> final state
      e. Apply boundary conditions
   3. Apply rain/drain additions
   4. Render water overlay
@@ -24,7 +24,7 @@ This file is part of DuneBox, a fork of Magic Sand.
 
 static const string SHADER_PATH = "shaders/water/adapted/";
 
-// ─── Construction ───────────────────────────────────────────────────
+// --- Construction ---------------------------------------------------
 
 WaterSimulation::WaterSimulation()
     : currentQuantity(0)
@@ -51,7 +51,7 @@ WaterSimulation::WaterSimulation()
 WaterSimulation::~WaterSimulation() {
 }
 
-// ─── Setup ──────────────────────────────────────────────────────────
+// --- Setup ----------------------------------------------------------
 
 void WaterSimulation::setup(int width, int height) {
     simWidth = width;
@@ -82,7 +82,7 @@ void WaterSimulation::setup(int width, int height) {
         && waterRenderShader.isLoaded();
 
     if (!allLoaded) {
-        ofLogError("WaterSimulation") << "One or more shaders failed to load — water simulation disabled";
+        ofLogError("WaterSimulation") << "One or more shaders failed to load - water simulation disabled";
         if (!bathymetryUpdateShader.isLoaded()) ofLogError("WaterSimulation") << "  Missing: BathymetryUpdate";
         if (!slopeFluxDerivShader.isLoaded())   ofLogError("WaterSimulation") << "  Missing: SlopeFluxDeriv";
         if (!eulerStepShader.isLoaded())         ofLogError("WaterSimulation") << "  Missing: EulerStep";
@@ -117,7 +117,7 @@ void WaterSimulation::setup(int width, int height) {
     }
 
     // Bathymetry FBOs: stores terrain elevation.
-    // In SARndbox this is vertex-centered at (size-1)×(size-1), but for the
+    // In SARndbox this is vertex-centered at (size-1)x(size-1), but for the
     // POC we use the same grid size and average 4 neighbors in the shaders
     // to get cell-centered values (matching the original shader convention).
     ofFboSettings bSettings;
@@ -249,13 +249,13 @@ void WaterSimulation::setup(int width, int height) {
     loadSettings();
 }
 
-// ─── Fullscreen quad helper ─────────────────────────────────────────
+// --- Fullscreen quad helper -----------------------------------------
 
 void WaterSimulation::drawFullscreenQuad() {
     quadMesh.draw();
 }
 
-// ─── Update: run simulation step ────────────────────────────────────
+// --- Update: run simulation step ------------------------------------
 
 void WaterSimulation::update(ofTexture& depthTexture, float dt) {
     if (!enabled || !initialized) return;
@@ -270,19 +270,19 @@ void WaterSimulation::update(ofTexture& depthTexture, float dt) {
     while (timeRemaining > 1e-8f && numSteps < maxStepsPerFrame) {
         float stepDt = min(fixedDt, timeRemaining);
 
-        // ── Step 1: Compute derivative from current state ──
+        // -- Step 1: Compute derivative from current state --
         calcDerivative(currentQuantity);
 
-        // ── Step 2: Euler predictor → q* (stored in quantityFbo[2]) ──
+        // -- Step 2: Euler predictor -> q* (stored in quantityFbo[2]) --
         eulerStep(currentQuantity, stepDt);
 
-        // ── Step 3: Compute derivative from q* ──
+        // -- Step 3: Compute derivative from q* --
         calcDerivative(2); // derivative of intermediate state
 
-        // ── Step 4: RK2 corrector → q_new ──
+        // -- Step 4: RK2 corrector -> q_new --
         rungeKuttaStep(currentQuantity, 2, stepDt);
 
-        // ── Step 5: Boundary conditions ──
+        // -- Step 5: Boundary conditions --
         applyBoundary(1 - currentQuantity);
 
         // Flip ping-pong
@@ -316,7 +316,7 @@ void WaterSimulation::update(ofTexture& depthTexture, float dt) {
     waterRenderFbo.end();
 }
 
-// ─── Pipeline passes ────────────────────────────────────────────────
+// --- Pipeline passes ------------------------------------------------
 
 void WaterSimulation::updateBathymetry(ofTexture& depthTexture) {
     int newBathy = 1 - currentBathymetry;
@@ -492,7 +492,7 @@ void WaterSimulation::applyWaterUpdate(int quantityIndex) {
     quantityFbo[targetIndex].end();
 }
 
-// ─── Draw ───────────────────────────────────────────────────────────
+// --- Draw -----------------------------------------------------------
 
 void WaterSimulation::draw() {
     if (!enabled || !initialized) return;
@@ -510,7 +510,7 @@ void WaterSimulation::draw(float w, float h) {
     ofDisableAlphaBlending();
 }
 
-// ─── Public API ─────────────────────────────────────────────────────
+// --- Public API -----------------------------------------------------
 
 void WaterSimulation::addWater(float x, float y, float radius, float amount) {
     pendingWaterAdds.push_back({x, y, radius, amount});
@@ -528,7 +528,7 @@ ofTexture& WaterSimulation::getBathymetryTexture() {
     return bathymetryFbo[currentBathymetry].getTexture();
 }
 
-// ─── Settings persistence ───────────────────────────────────────────
+// --- Settings persistence -------------------------------------------
 
 void WaterSimulation::loadSettings(const std::string& path) {
     ofXml xml;

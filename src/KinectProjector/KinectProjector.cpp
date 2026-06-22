@@ -299,7 +299,7 @@ void KinectProjector::update()
 	// KNOWN LIMITATION (reconnect race): openKinect() re-initializes the grabber's
 	// device sources from this (main) thread while the grabber thread may be reading
 	// them. This is only reachable on the uncommon "initial open failed, then a later
-	// reconnect succeeds" path — when the Kinect opens on the first try (the normal
+	// reconnect succeeds" path - when the Kinect opens on the first try (the normal
 	// case) kinectOpened is true from setup() and this block never runs, so there is
 	// no race in normal operation. A full fix would route the reopen onto the grabber
 	// thread via KinectGrabber::performInThread(); deferred to avoid destabilizing the
@@ -858,6 +858,12 @@ void KinectProjector::updateProjKinectAutoCalibration()
         trials = 0;
 		TemporalFrameCounter = 0;
 
+		// Start each acquisition from a clean slate. Without this, points from a
+		// previous (terminated, failed, or re-run) calibration accumulate in the
+		// pair buffers and corrupt the projection solver on the second attempt.
+		pairsKinect.clear();
+		pairsProjector.clear();
+
 		ofPoint dispPt = ofPoint(projRes.x / 2, projRes.y / 2) + autoCalibPts[currentCalibPts]; //
 		drawChessboard(dispPt.x, dispPt.y, chessboardSize); // We can now draw the next chess board
 
@@ -1063,8 +1069,15 @@ void KinectProjector::CalibrateNextPoint()
 			{
 				trials = 0;
 				currentCalibPts++;
-				ofPoint dispPt = ofPoint(projRes.x / 2, projRes.y / 2) + autoCalibPts[currentCalibPts]; // Compute next chessboard position
-				drawChessboard(dispPt.x, dispPt.y, chessboardSize); // We can now draw the next chess board
+				// autoCalibPts is a std::array<ofPoint,10>; after the final (10th)
+				// point currentCalibPts becomes 10. The state machine transitions
+				// to COMPUTE on the next frame, so guard the access to avoid an
+				// out-of-bounds read and a pointless off-screen chessboard draw.
+				if (currentCalibPts < 10)
+				{
+					ofPoint dispPt = ofPoint(projRes.x / 2, projRes.y / 2) + autoCalibPts[currentCalibPts]; // Compute next chessboard position
+					drawChessboard(dispPt.x, dispPt.y, chessboardSize); // We can now draw the next chess board
+				}
 			}
 			else
 			{
@@ -2021,7 +2034,12 @@ void KinectProjector::ProcessChessBoardInput(ofxCvGrayscaleImage& image)
 		}
 	}
 	std::cout << "Min " << (int)minV << " max " << (int)maxV << std::endl;
-	double scale = 255.0 / (maxV - minV);
+	// Guard against a flat/empty ROI (maxV == minV) which would divide by zero
+	// and yield inf/NaN normalization, silently breaking chessboard detection.
+	int range = (int)maxV - (int)minV;
+	if (range <= 0)
+		range = 1;
+	double scale = 255.0 / range;
 
 	for (int y = 0; y < image.height; y++)
 	{

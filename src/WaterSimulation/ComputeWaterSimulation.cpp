@@ -26,7 +26,7 @@ This file is part of DuneBox, a fork of Magic Sand.
 
 static const string COMPUTE_SHADER_PATH = "shaders/water/compute/";
 
-// ─── Construction ───────────────────────────────────────────────────
+// --- Construction ---------------------------------------------------
 
 ComputeWaterSimulation::ComputeWaterSimulation()
     : currentQuantity(0)
@@ -77,7 +77,7 @@ ComputeWaterSimulation::~ComputeWaterSimulation() {
     if (waterRenderProgram) glDeleteProgram(waterRenderProgram);
 }
 
-// ─── Compute shader support check ──────────────────────────────────
+// --- Compute shader support check ----------------------------------
 
 bool ComputeWaterSimulation::isComputeSupported() {
     int major = ofGetGLRenderer()->getGLVersionMajor();
@@ -92,7 +92,7 @@ static bool hasGlClearTexImage() {
     return (major > 4) || (major == 4 && minor >= 4);
 }
 
-// ─── GL texture allocation ─────────────────────────────────────────
+// --- GL texture allocation -----------------------------------------
 
 GLuint ComputeWaterSimulation::allocateTexture(int w, int h, GLenum internalFormat) {
     GLuint tex;
@@ -128,7 +128,7 @@ GLuint ComputeWaterSimulation::allocateTexture(int w, int h, GLenum internalForm
     return tex;
 }
 
-// ─── Compute shader loading ────────────────────────────────────────
+// --- Compute shader loading ----------------------------------------
 
 GLuint ComputeWaterSimulation::loadComputeShader(const std::string& path) {
     string fullPath = ofToDataPath(path);
@@ -177,7 +177,7 @@ GLuint ComputeWaterSimulation::loadComputeShader(const std::string& path) {
     return program;
 }
 
-// ─── Setup ──────────────────────────────────────────────────────────
+// --- Setup ----------------------------------------------------------
 
 void ComputeWaterSimulation::setup(int width, int height) {
     simWidth = width;
@@ -186,7 +186,7 @@ void ComputeWaterSimulation::setup(int width, int height) {
     ofLogNotice("ComputeWaterSimulation") << "Setting up " << simWidth << "x" << simHeight
         << " compute-shader simulation grid";
 
-    // Compute workgroup counts (16×16 threads per group)
+    // Compute workgroup counts (16x16 threads per group)
     groupsX = (simWidth + 15) / 16;
     groupsY = (simHeight + 15) / 16;
 
@@ -226,7 +226,7 @@ void ComputeWaterSimulation::setup(int width, int height) {
     outputOfTex.texData.glInternalFormat = GL_RGBA8;
     outputOfTex.texData.bAllocated = true;
 
-    // Allocate FBO for depth→bathymetry format conversion (R32F → RGBA32F).
+    // Allocate FBO for depth->bathymetry format conversion (R32F -> RGBA32F).
     // glCopyImageSubData requires compatible texel formats; since the depth
     // texture is single-channel (R32F) and bathymetryTex is RGBA32F, we render
     // through this FBO to perform the conversion.
@@ -259,7 +259,7 @@ void ComputeWaterSimulation::setup(int width, int height) {
     loadSettings();
 }
 
-// ─── Update ─────────────────────────────────────────────────────────
+// --- Update ---------------------------------------------------------
 
 void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
     if (!enabled || !initialized) return;
@@ -271,7 +271,7 @@ void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
     {
         int newBathy = 1 - currentBathymetry;
 
-        // Draw depth texture into the conversion FBO (R32F → RGBA32F)
+        // Draw depth texture into the conversion FBO (R32F -> RGBA32F)
         depthConversionFbo.begin();
         ofClear(0, 0, 0, 0);
         depthTexture.draw(0, 0, simWidth, simHeight);
@@ -306,7 +306,7 @@ void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
         float stepDt = min(fixedDt, timeRemaining);
         float atten = pow(attenuation, stepDt);
 
-        // Predictor: compute derivative from q_n, Euler step → q*
+        // Predictor: compute derivative from q_n, Euler step -> q*
         {
             glUseProgram(waterStepProgram);
             glUniform2i(glGetUniformLocation(waterStepProgram, "gridSize"), simWidth, simHeight);
@@ -329,7 +329,7 @@ void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
         }
 
-        // Corrector: compute derivative from q*, RK2 step → q_new
+        // Corrector: compute derivative from q*, RK2 step -> q_new
         {
             int targetQ = 1 - currentQuantity;
 
@@ -370,7 +370,7 @@ void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
     dispatchWaterRender();
 }
 
-// ─── Dispatch helpers ───────────────────────────────────────────────
+// --- Dispatch helpers -----------------------------------------------
 
 void ComputeWaterSimulation::dispatchBathymetryUpdate() {
     int newBathy = currentBathymetry; // currentBathymetry was set to new before this call
@@ -455,7 +455,7 @@ void ComputeWaterSimulation::dispatchWaterRender() {
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
 }
 
-// ─── Draw ───────────────────────────────────────────────────────────
+// --- Draw -----------------------------------------------------------
 
 void ComputeWaterSimulation::draw() {
     if (!enabled || !initialized) return;
@@ -473,7 +473,7 @@ void ComputeWaterSimulation::draw(float w, float h) {
     ofDisableAlphaBlending();
 }
 
-// ─── Public API ─────────────────────────────────────────────────────
+// --- Public API -----------------------------------------------------
 
 void ComputeWaterSimulation::addWater(float x, float y, float radius, float amount) {
     pendingWaterAdds.push_back({x, y, radius, amount});
@@ -508,7 +508,7 @@ ofTexture& ComputeWaterSimulation::getBathymetryTexture() {
     return bathymetryOfTex;
 }
 
-// ─── Settings persistence ───────────────────────────────────────────
+// --- Settings persistence -------------------------------------------
 
 void ComputeWaterSimulation::loadSettings(const std::string& path) {
     ofXml xml;
@@ -561,7 +561,7 @@ void ComputeWaterSimulation::setEnabled(bool e) { enabled = e; }
 
 void ComputeWaterSimulation::setFluidType(FluidType type) {
     fluidType = type;
-    // Lava has higher viscosity → more attenuation
+    // Lava has higher viscosity -> more attenuation
     if (type == FLUID_LAVA && attenuation > 0.85f) {
         attenuation = 0.85f;
     }

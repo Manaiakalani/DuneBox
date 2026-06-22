@@ -150,7 +150,7 @@ private:
     ColorThemeManager themeManager;
 
     // Day/night cycle
-    float timeOfDay;           // 0.0–1.0 (0=midnight, 0.5=noon)
+    float timeOfDay;           // 0.0-1.0 (0=midnight, 0.5=noon)
     float dayNightCycleSpeed;  // seconds per full cycle
     bool dayNightEnabled;      // toggle with 'n' key
     

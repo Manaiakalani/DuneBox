@@ -1,5 +1,5 @@
 /***********************************************************************
-KinectV2Handler — Implementation for Kinect V2 (Xbox One).
+KinectV2Handler - Implementation for Kinect V2 (Xbox One).
 
 Requires ofxKinectV2 addon and libfreenect2.
 Only compiled when DUNEBOX_USE_KINECT_V2 is defined.
@@ -55,17 +55,17 @@ void KinectV2Handler::update() {
     frameNew = kinect.isFrameNew();
 
     if (frameNew) {
-        // Copy depth data (512×424, 16-bit millimetres)
+        // Copy depth data (512x424, 16-bit millimetres)
         depthPixels = kinect.getRawDepthPixels();
 
-        // Copy colour data (1920×1080 RGB)
+        // Copy colour data (1920x1080 RGB)
         colorPixels = kinect.getPixels();
     }
 }
 
 ofFloatPixels& KinectV2Handler::getDepthPixelsFloat() {
     // Convert uint16 mm values to normalised float [0,1]
-    // Kinect V2 range: 0–4500 mm
+    // Kinect V2 range: 0-4500 mm
     const unsigned short* src = depthPixels.getData();
     float* dst = depthFloat.getData();
     int total = 512 * 424;
@@ -82,7 +82,7 @@ ofFloatPixels& KinectV2Handler::getDepthPixelsFloat() {
 }
 
 ofMatrix4x4 KinectV2Handler::getWorldMatrix() {
-    // Kinect V2 world matrix — identity for now; calibration overrides this
+    // Kinect V2 world matrix - identity for now; calibration overrides this
     return ofMatrix4x4();
 }
 
