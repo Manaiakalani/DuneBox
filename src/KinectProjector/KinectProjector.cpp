@@ -1273,9 +1273,37 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 		// all widgets are added, so re-anchoring here positions them correctly.
 		gui->setPosition(ofxDatGuiAnchor::TOP_RIGHT);
 		StatusGUI->setPosition(ofxDatGuiAnchor::BOTTOM_LEFT);
+		// ofxDatGui is an OF-0.9-era addon drawn manually right after FBO/texture
+		// draws. On this GL 4.3 core-profile / programmable-renderer build the
+		// inherited GL state (viewport clamped to the small main FBO, depth test,
+		// disabled alpha blending) left the panels rendering as black rectangles
+		// with garbled text. Re-establish a clean full-window 2D draw state before
+		// drawing so ofxDatGui's ofDrawRectangle / ofTrueTypeFont batches render
+		// correctly. Kept GL 4.3 (compute water sim depends on it).
+		beginGuiDrawState();
 		gui->draw();
 		StatusGUI->draw();
+		endGuiDrawState();
 	}
+}
+
+// Re-establish OF's default full-window 2D draw state so the manually-drawn
+// ofxDatGui panels render correctly regardless of any GL state left behind by
+// the preceding FBO / texture / compute draws in this GL 4.3 core-profile build.
+void KinectProjector::beginGuiDrawState(){
+	ofPushView();
+	ofViewport(0, 0, ofGetWidth(), ofGetHeight());
+	ofSetupScreenOrtho(ofGetWidth(), ofGetHeight(), -1, 1);
+	ofPushStyle();
+	ofDisableDepthTest();
+	ofEnableAlphaBlending();
+	ofFill();
+	ofSetColor(255);
+}
+
+void KinectProjector::endGuiDrawState(){
+	ofPopStyle();
+	ofPopView();
 }
 
 void KinectProjector::drawChessboard(int x, int y, int chessboardSize) {
