@@ -78,6 +78,16 @@ jobs:
           # OWN headers. Re-introduce it per addon header so it compiles on OF 0.12.
           find ofxDatGui/src -name '*.h' -print0 \
             | xargs -0 sed -i 's/#pragma once/#pragma once\nusing namespace std;/'
+          # ofxDatGui renders its labels via ofTrueTypeFont's textured-quad path
+          # (ttf.drawString). On this app's forced GL 4.3 CORE profile (needed for
+          # the compute water sim) that textured path renders the panel text as
+          # garbled diagonal streaks, so the setup panels looked black with sheared
+          # text. Switch label rendering to the vector-outline path
+          # (drawStringAsShapes): it draws solid tessellated polygons through the
+          # same renderer path as ofDrawRectangle, which renders correctly in a core
+          # profile. Enable font contours at load time so the outlines exist.
+          sed -i 's/ttf.load(mFile, mSize)/ttf.load(mFile, mSize, true, true, true)/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.h
+          sed -i 's/ttf.drawString(s, x, y);/ttf.drawStringAsShapes(s, x, y);/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
 
       - name: Configure Kinect SDK (vendored headers + import lib)
         shell: pwsh
@@ -352,6 +362,11 @@ jobs:
           # GNU (Linux) and BSD (macOS) userlands.
           find ofxDatGui/src -name '*.h' -print0 \
             | xargs -0 perl -i -pe 's/#pragma once/#pragma once\nusing namespace std;/'
+          # See the Windows job: ofxDatGui's textured ttf.drawString renders as
+          # garbled diagonal streaks under a GL core profile; use the vector
+          # drawStringAsShapes path (solid polygons) and enable font contours.
+          perl -i -pe 's/ttf\.load\(mFile, mSize\)/ttf.load(mFile, mSize, true, true, true)/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.h
+          perl -i -pe 's/ttf\.drawString\(s, x, y\);/ttf.drawStringAsShapes(s, x, y);/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
           # ofxCv's Tracker.h declares its constructor with the non-standard
           # injected-class-name form `Tracker<T>()`, which GCC/Clang reject
           # (MSVC tolerates it). Normalise to the legal `Tracker()` spelling.
@@ -427,6 +442,11 @@ jobs:
           clone_pin thomwolf/ofxDatGui        ofxDatGui    0c2230afa68fe5dea822932f6b4c178778af9440
           find ofxDatGui/src -name '*.h' -print0 \
             | xargs -0 perl -i -pe 's/#pragma once/#pragma once\nusing namespace std;/'
+          # See the Windows job: ofxDatGui's textured ttf.drawString renders as
+          # garbled diagonal streaks under a GL core profile; use the vector
+          # drawStringAsShapes path (solid polygons) and enable font contours.
+          perl -i -pe 's/ttf\.load\(mFile, mSize\)/ttf.load(mFile, mSize, true, true, true)/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.h
+          perl -i -pe 's/ttf\.drawString\(s, x, y\);/ttf.drawStringAsShapes(s, x, y);/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
           # ofxCv's Tracker.h declares its constructor with the non-standard
           # injected-class-name form `Tracker<T>()`, which GCC/Clang reject
           # (MSVC tolerates it). Normalise to the legal `Tracker()` spelling.
