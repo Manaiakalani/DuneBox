@@ -235,15 +235,16 @@ void ofApp::draw()
 			"The sand topography appears here once calibration is loaded.\n"
 			"\n"
 			"Press SPACE to start. If it stays in SETUP, the projector is not\n"
-			"calibrated for this rig yet.\n"
-			"Open the GUI panel and run 'Full Calibration' (does ROI + projector),\n"
-			"or 'Automatically calibrate kinect & projector', then SPACE again.\n"
-			"Watch 'Application state' / 'Calibration Step' in the GUI.";
+			"calibrated for this rig yet. Open the GUI 'Calibration' folder:\n"
+			"  1) flatten the sand,\n"
+			"  2) click 'Automatically calibrate kinect & projector',\n"
+			"  3) press SPACE again. (If ROI Status is not OK, first click\n"
+			"     'Manually define sand region'.) Watch the Status panel.";
 		int hx = ofGetWidth() / 2 - 240;
-		int hy = ofGetHeight() / 2 - 30;
+		int hy = ofGetHeight() / 2 - 60;
 		// Dark backing box so the white text is readable over any color feed.
 		ofSetColor(0, 0, 0, 170);
-		ofDrawRectangle(hx - 12, hy - 24, 560, 165);
+		ofDrawRectangle(hx - 12, hy - 24, 560, 195);
 		ofSetColor(255);
 		ofDrawBitmapString(hint, hx, hy);
 		ofSetColor(255);
