@@ -252,6 +252,19 @@ void SandSurfaceRenderer::drawMainWindow(float x, float y, float width, float he
     fboProjWindow.draw(x, y, width, height);
     
     if (displayGui) {
+        // Re-establish OF's default full-window 2D draw state before drawing the
+        // OF-0.9-era ofxDatGui panels. On this GL 4.3 core-profile build the GL
+        // state left by the preceding FBO / texture / compute draws (clamped
+        // viewport, depth test, disabled alpha blending) made the panels render
+        // as black rectangles with garbled text. See KinectProjector for details.
+        ofPushView();
+        ofViewport(0, 0, ofGetWidth(), ofGetHeight());
+        ofSetupScreenOrtho(ofGetWidth(), ofGetHeight(), -1, 1);
+        ofPushStyle();
+        ofDisableDepthTest();
+        ofEnableAlphaBlending();
+        ofFill();
+        ofSetColor(255);
         heightMap.getTexture().draw(gui2->getPosition().x, gui2->getPosition().y+gui2->getHeight(), gui2->getWidth(), 30);
 		gui->draw();
 		gui2->draw();
@@ -259,6 +272,8 @@ void SandSurfaceRenderer::drawMainWindow(float x, float y, float width, float he
             gui3->draw();
             colorList->draw();
         }
+        ofPopStyle();
+        ofPopView();
 	}
 }
 

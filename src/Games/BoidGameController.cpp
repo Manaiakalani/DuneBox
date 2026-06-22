@@ -312,7 +312,21 @@ void CBoidGameController::drawMainWindow(float x, float y, float width, float he
 	// Re-anchor in the draw context so the panel tracks the live main-window size
 	// (ofxDatGui only anchors at construction; setAutoDraw(false) drops the resize hook).
 	gui->setPosition(ofxDatGuiAnchor::BOTTOM_RIGHT);
+	// Re-establish OF's default full-window 2D draw state before drawing the
+	// OF-0.9-era ofxDatGui panel. On this GL 4.3 core-profile build the GL state
+	// left by the preceding FBO draw (clamped viewport, depth test, disabled alpha
+	// blending) made the panel render black with garbled text. See KinectProjector.
+	ofPushView();
+	ofViewport(0, 0, ofGetWidth(), ofGetHeight());
+	ofSetupScreenOrtho(ofGetWidth(), ofGetHeight(), -1, 1);
+	ofPushStyle();
+	ofDisableDepthTest();
+	ofEnableAlphaBlending();
+	ofFill();
+	ofSetColor(255);
 	gui->draw();
+	ofPopStyle();
+	ofPopView();
 }
 
 
