@@ -1271,6 +1271,27 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 	ofSetColor(255, 255, 0);
 	ofDrawRectangle(3826, 0, 270, 164);
 	ofSetColor(255);
+	{
+		static int gd3 = 0;
+		if (gd3 < 4) {
+			GLint prog = 0, dfbo = 0, rfbo = 0, vp[4] = {0,0,0,0}, sciss[4] = {0,0,0,0};
+			glGetIntegerv(GL_CURRENT_PROGRAM, &prog);
+			glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &dfbo);
+			glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &rfbo);
+			glGetIntegerv(GL_VIEWPORT, vp);
+			glGetIntegerv(GL_SCISSOR_BOX, sciss);
+			GLboolean depthTest = glIsEnabled(GL_DEPTH_TEST);
+			GLboolean scissTest = glIsEnabled(GL_SCISSOR_TEST);
+			GLboolean blend = glIsEnabled(GL_BLEND);
+			GLenum err = glGetError();
+			ofLogNotice("GUIDIAG3") << "prog=" << prog << " drawFBO=" << dfbo << " readFBO=" << rfbo
+				<< " vp=[" << vp[0] << "," << vp[1] << "," << vp[2] << "," << vp[3] << "]"
+				<< " depth=" << (int)depthTest << " scissorEnabled=" << (int)scissTest
+				<< " scissor=[" << sciss[0] << "," << sciss[1] << "," << sciss[2] << "," << sciss[3] << "]"
+				<< " blend=" << (int)blend << " glErr=" << err;
+			gd3++;
+		}
+	}
 
 	if (displayGui)
 	{
