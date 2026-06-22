@@ -1543,7 +1543,9 @@ void KinectProjector::startApplication()
 		}
 		else
 		{
-			ofLogVerbose("KinectProjector") << "KinectProjector.startApplication(): Calibration could not be loaded";
+			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): projector/kinect calibration missing or incompatible (settings/calibration.xml). Open the GUI and run 'Automatically calibrate kinect & projector'.";
+			calibrationText = "NOT calibrated - run 'Automatically calibrate kinect & projector'";
+			updateStatusGUI();
 			return;
 		}
 	}
@@ -1571,7 +1573,9 @@ void KinectProjector::startApplication()
 		}
 		else 
 		{
-			ofLogVerbose("KinectProjector") << "KinectProjector.setup(): Settings could not be loaded ";
+			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): kinect ROI / base-plane settings missing (settings/kinectProjectorSettings.xml). Open the GUI and run the ROI + sea-level calibration.";
+			calibrationText = "ROI not set - run ROI + sea-level calibration in the GUI";
+			updateStatusGUI();
 			return;
 		}
 	}

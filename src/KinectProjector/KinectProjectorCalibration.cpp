@@ -100,14 +100,24 @@ vector<double> ofxKinectProjectorToolkit::getCalibration()
 
 bool ofxKinectProjectorToolkit::loadCalibration(string path){
     ofXml xml;
-    if (!xml.load(path))
+    if (!xml.load(path)) {
+        ofLogWarning("ofxKinectProjectorToolkit")
+            << "loadCalibration(): no calibration file at '" << path
+            << "'. Run 'Automatically calibrate kinect & projector' in the GUI to create one.";
         return false;
+    }
 	auto calibration = xml.getChild("CALIBRATION");
 	auto resolutions = calibration.getChild("RESOLUTIONS");
 	ofVec2f sprojRes = resolutions.getChild("PROJECTOR").getValue<ofVec2f>();
 	ofVec2f skinectRes = resolutions.getChild("KINECT").getValue<ofVec2f>();
-	if (sprojRes!=projRes || skinectRes!=kinectRes)
+	if (sprojRes!=projRes || skinectRes!=kinectRes) {
+		ofLogWarning("ofxKinectProjectorToolkit")
+			<< "loadCalibration(): '" << path << "' was calibrated for projector "
+			<< sprojRes << " / kinect " << skinectRes << ", but this rig is projector "
+			<< projRes << " / kinect " << kinectRes
+			<< ". Ignoring the stale calibration — re-run 'Automatically calibrate kinect & projector'.";
 		return false;
+	}
     auto coefficients = calibration.getChild("COEFFICIENTS");
     for (int i=0; i<11; i++) {
         x(i, 0) = coefficients.getChild("COEFF"+ofToString(i)).getFloatValue();
