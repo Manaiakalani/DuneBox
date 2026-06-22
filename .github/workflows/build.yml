@@ -92,6 +92,10 @@ jobs:
           # ofVboMesh explicitly - the no-arg draw() slices back to the ofMesh path.
           sed -i 's|#include "ofxSmartFont.h"|#include "ofxSmartFont.h"\n#include "ofVboMesh.h"|' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
           sed -i 's/ttf.drawString(s, x, y);/ofVboMesh _m = ttf.getStringMesh(s, x, y); const ofTexture\& _t = ttf.getFontTexture(); _t.bind(); _m.draw(OF_MESH_FILL); _t.unbind();/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
+          # Fail loudly if a future ofxDatGui pin bump makes the substitution a
+          # no-op (the panels would silently regress to garbled text otherwise).
+          grep -q 'ofVboMesh _m = ttf.getStringMesh' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp \
+            || { echo "ERROR: ofxSmartFont ofVboMesh patch did not apply"; exit 1; }
 
       - name: Configure Kinect SDK (vendored headers + import lib)
         shell: pwsh
@@ -370,6 +374,10 @@ jobs:
           # multi-window GL context, so draw labels via an ofVboMesh (own vbo).
           perl -i -pe 's{#include "ofxSmartFont.h"}{#include "ofxSmartFont.h"\n#include "ofVboMesh.h"}' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
           perl -i -pe 's/ttf\.drawString\(s, x, y\);/ofVboMesh _m = ttf.getStringMesh(s, x, y); const ofTexture& _t = ttf.getFontTexture(); _t.bind(); _m.draw(OF_MESH_FILL); _t.unbind();/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
+          # Fail loudly if a future ofxDatGui pin bump makes the substitution a
+          # no-op (the panels would silently regress to garbled text otherwise).
+          grep -q 'ofVboMesh _m = ttf.getStringMesh' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp \
+            || { echo "ERROR: ofxSmartFont ofVboMesh patch did not apply"; exit 1; }
           # ofxCv's Tracker.h declares its constructor with the non-standard
           # injected-class-name form `Tracker<T>()`, which GCC/Clang reject
           # (MSVC tolerates it). Normalise to the legal `Tracker()` spelling.
@@ -449,6 +457,10 @@ jobs:
           # multi-window GL context, so draw labels via an ofVboMesh (own vbo).
           perl -i -pe 's{#include "ofxSmartFont.h"}{#include "ofxSmartFont.h"\n#include "ofVboMesh.h"}' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
           perl -i -pe 's/ttf\.drawString\(s, x, y\);/ofVboMesh _m = ttf.getStringMesh(s, x, y); const ofTexture& _t = ttf.getFontTexture(); _t.bind(); _m.draw(OF_MESH_FILL); _t.unbind();/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
+          # Fail loudly if a future ofxDatGui pin bump makes the substitution a
+          # no-op (the panels would silently regress to garbled text otherwise).
+          grep -q 'ofVboMesh _m = ttf.getStringMesh' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp \
+            || { echo "ERROR: ofxSmartFont ofVboMesh patch did not apply"; exit 1; }
           # ofxCv's Tracker.h declares its constructor with the non-standard
           # injected-class-name form `Tracker<T>()`, which GCC/Clang reject
           # (MSVC tolerates it). Normalise to the legal `Tracker()` spelling.
