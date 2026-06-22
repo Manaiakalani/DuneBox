@@ -224,38 +224,45 @@ void ofApp::draw()
 
 	kinectProjector->drawMainWindow(x, y, w, h);
 
-	if (kinectProjector->GetApplicationState() != KinectProjector::APPLICATION_STATE_RUNNING)
+	if (kinectProjector->GetApplicationState() == KinectProjector::APPLICATION_STATE_SETUP)
 	{
 		// Overlay the setup guidance ON TOP of the raw Kinect color view, which
 		// is otherwise meaningless to a setup operator and looks like a broken
-		// running screen.
+		// running screen. Shown only in SETUP (not while CALIBRATING, which has
+		// its own modal prompts).
 		std::string hint =
 			"DuneBox - SETUP (not yet calibrated)\n"
 			"The sand topography appears here once calibration is loaded.\n"
 			"\n"
-			"Press SPACE to start. If it stays in SETUP, the projector/kinect\n"
-			"calibration is missing or was made for a different sensor.\n"
-			"Open the GUI panel and run 'Automatically calibrate kinect & projector',\n"
-			"then SPACE again. Watch 'Application state' / 'Calibration Step' in the GUI.";
+			"Press SPACE to start. If it stays in SETUP, the projector is not\n"
+			"calibrated for this rig yet.\n"
+			"Open the GUI panel and run 'Full Calibration' (does ROI + projector),\n"
+			"or 'Automatically calibrate kinect & projector', then SPACE again.\n"
+			"Watch 'Application state' / 'Calibration Step' in the GUI.";
 		int hx = ofGetWidth() / 2 - 240;
 		int hy = ofGetHeight() / 2 - 30;
 		// Dark backing box so the white text is readable over any color feed.
 		ofSetColor(0, 0, 0, 170);
-		ofDrawRectangle(hx - 12, hy - 24, 560, 150);
+		ofDrawRectangle(hx - 12, hy - 24, 560, 165);
 		ofSetColor(255);
 		ofDrawBitmapString(hint, hx, hy);
 		ofSetColor(255);
 	}
 
 	// Bottom-left status indicator. Only advertise the active theme once the
-	// app is actually RUNNING; during SETUP show the real state so the screen
+	// app is actually RUNNING; otherwise show the real state so the screen
 	// doesn't look like a broken "Theme: Topo" running view.
 	{
-		bool running = kinectProjector->GetApplicationState() == KinectProjector::APPLICATION_STATE_RUNNING;
+		KinectProjector::Application_state appState = kinectProjector->GetApplicationState();
+		bool running = appState == KinectProjector::APPLICATION_STATE_RUNNING;
 		std::string name = sandSurfaceRenderer->getThemeName();
-		std::string label = running
-			? ("Theme: " + name)
-			: "SETUP - not calibrated (calibrate via the GUI panel)";
+		std::string label;
+		if (running)
+			label = "Theme: " + name;
+		else if (appState == KinectProjector::APPLICATION_STATE_CALIBRATING)
+			label = "CALIBRATING - follow the on-screen prompts";
+		else
+			label = "SETUP - not calibrated (calibrate via the GUI panel)";
 		float alpha = 180;
 		if (running && themeDisplayTimer > 0) {
 			// Bright flash when recently switched
