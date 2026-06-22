@@ -1282,6 +1282,39 @@ void KinectProjector::drawMainWindow(float x, float y, float width, float height
 		// context skewed every ofDrawRectangle / ofTrueTypeFont batch into
 		// diagonal streaks (the panels rendered black with garbled text).
 		beginGuiDrawState();
+		// --- CORNERDIAG: plain rects + bitmap labels at the EXACT gui corner
+		// positions, raw context (no view override). Decisive: if these render
+		// as clean rects at the corners, the skew is INTERNAL to ofxDatGui; if
+		// they ALSO shear, the raw draw context is distorting off-centre geometry.
+		{
+			static int cdN = 0;
+			ofPushStyle();
+			ofFill();
+			ofSetColor(255, 0, 255);
+			ofDrawRectangle(gui->getPosition().x, gui->getPosition().y, gui->getWidth(), gui->getHeight());
+			ofSetColor(0, 255, 255);
+			ofDrawRectangle(StatusGUI->getPosition().x, StatusGUI->getPosition().y, StatusGUI->getWidth(), StatusGUI->getHeight());
+			ofSetColor(0);
+			ofDrawBitmapString("CTRL-CORNER", gui->getPosition().x + 8, gui->getPosition().y + 20);
+			ofDrawBitmapString("STAT-CORNER", StatusGUI->getPosition().x + 8, StatusGUI->getPosition().y + 20);
+			ofPopStyle();
+			if (cdN < 3) {
+				GLint vp[4] = {0,0,0,0};
+				glGetIntegerv(GL_VIEWPORT, vp);
+				unsigned char pc[4] = {0,0,0,0}, ps[4] = {0,0,0,0};
+				int cx = (int)(gui->getPosition().x + gui->getWidth()/2);
+				int cy = vp[3] - (int)(gui->getPosition().y + gui->getHeight()/2);
+				int sx = (int)(StatusGUI->getPosition().x + StatusGUI->getWidth()/2);
+				int sy = vp[3] - (int)(StatusGUI->getPosition().y + StatusGUI->getHeight()/2);
+				glReadPixels(cx, cy, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pc);
+				glReadPixels(sx, sy, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, ps);
+				ofLogNotice("CORNERDIAG") << "ctrl magenta readback @(" << cx << "," << cy << ")="
+					<< (int)pc[0] << "," << (int)pc[1] << "," << (int)pc[2]
+					<< "  stat cyan readback @(" << sx << "," << sy << ")="
+					<< (int)ps[0] << "," << (int)ps[1] << "," << (int)ps[2];
+				cdN++;
+			}
+		}
 		gui->draw();
 		StatusGUI->draw();
 		endGuiDrawState();
