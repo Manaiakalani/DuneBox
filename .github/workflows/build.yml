@@ -78,17 +78,20 @@ jobs:
           # OWN headers. Re-introduce it per addon header so it compiles on OF 0.12.
           find ofxDatGui/src -name '*.h' -print0 \
             | xargs -0 sed -i 's/#pragma once/#pragma once\nusing namespace std;/'
-          # ofxDatGui renders its labels via ofTrueTypeFont, whose glyph meshes
-          # (BOTH the textured-quad path and the drawStringAsShapes vector path)
-          # render as sheared diagonal streaks under this app's forced GL 4.3 CORE
-          # profile (required for the compute water sim), so the setup panels' text
-          # was garbled. ofDrawBitmapString is matrix-robust and renders correctly
-          # in the exact same main-window draw context (proven by the app's own
-          # status / hint text), so route the panel labels through it. The bitmap
-          # font is fixed-size but legible and reliable. ofxSmartFont.cpp only
-          # includes ofTrueTypeFont.h, so pull in ofGraphics.h for the declaration.
-          sed -i 's|#include "ofxSmartFont.h"|#include "ofxSmartFont.h"\n#include "ofGraphics.h"|' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
-          sed -i 's/ttf.drawString(s, x, y);/ofDrawBitmapString(s, x, y);/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
+          # ofxDatGui renders labels via ofTrueTypeFont::drawString. In OF's
+          # programmable renderer both ttf and bitmap text funnel through
+          # draw(const ofMesh&), which uploads to ONE shared renderer member VBO
+          # (meshVbo) per call. In this app's multi-window shared-GL-context setup
+          # under the forced GL 4.3 profile, many text draws per frame alias against
+          # that single meshVbo - every draw reads the last upload, so labels render
+          # as the wrong string / sheared garbage. Drawing through an ofVboMesh,
+          # which owns its OWN vbo (draw(const ofVboMesh&) uses mesh.getVbo()),
+          # sidesteps the shared meshVbo and renders each label correctly. We bind
+          # the font texture exactly as OF's own ttf path does, so colour/alpha and
+          # the nice TTF font are preserved. NOTE: call draw(OF_MESH_FILL) on the
+          # ofVboMesh explicitly - the no-arg draw() slices back to the ofMesh path.
+          sed -i 's|#include "ofxSmartFont.h"|#include "ofxSmartFont.h"\n#include "ofVboMesh.h"|' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
+          sed -i 's/ttf.drawString(s, x, y);/ofVboMesh _m = ttf.getStringMesh(s, x, y); const ofTexture\& _t = ttf.getFontTexture(); _t.bind(); _m.draw(OF_MESH_FILL); _t.unbind();/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
 
       - name: Configure Kinect SDK (vendored headers + import lib)
         shell: pwsh
@@ -363,10 +366,10 @@ jobs:
           # GNU (Linux) and BSD (macOS) userlands.
           find ofxDatGui/src -name '*.h' -print0 \
             | xargs -0 perl -i -pe 's/#pragma once/#pragma once\nusing namespace std;/'
-          # See the Windows job: ofxDatGui's ttf glyph meshes shear under a GL
-          # core profile, so route panel labels through matrix-robust bitmap text.
-          perl -i -pe 's{#include "ofxSmartFont.h"}{#include "ofxSmartFont.h"\n#include "ofGraphics.h"}' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
-          perl -i -pe 's/ttf\.drawString\(s, x, y\);/ofDrawBitmapString(s, x, y);/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
+          # See the Windows job: OF's shared meshVbo aliases under this app's
+          # multi-window GL context, so draw labels via an ofVboMesh (own vbo).
+          perl -i -pe 's{#include "ofxSmartFont.h"}{#include "ofxSmartFont.h"\n#include "ofVboMesh.h"}' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
+          perl -i -pe 's/ttf\.drawString\(s, x, y\);/ofVboMesh _m = ttf.getStringMesh(s, x, y); const ofTexture& _t = ttf.getFontTexture(); _t.bind(); _m.draw(OF_MESH_FILL); _t.unbind();/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
           # ofxCv's Tracker.h declares its constructor with the non-standard
           # injected-class-name form `Tracker<T>()`, which GCC/Clang reject
           # (MSVC tolerates it). Normalise to the legal `Tracker()` spelling.
@@ -442,10 +445,10 @@ jobs:
           clone_pin thomwolf/ofxDatGui        ofxDatGui    0c2230afa68fe5dea822932f6b4c178778af9440
           find ofxDatGui/src -name '*.h' -print0 \
             | xargs -0 perl -i -pe 's/#pragma once/#pragma once\nusing namespace std;/'
-          # See the Windows job: ofxDatGui's ttf glyph meshes shear under a GL
-          # core profile, so route panel labels through matrix-robust bitmap text.
-          perl -i -pe 's{#include "ofxSmartFont.h"}{#include "ofxSmartFont.h"\n#include "ofGraphics.h"}' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
-          perl -i -pe 's/ttf\.drawString\(s, x, y\);/ofDrawBitmapString(s, x, y);/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
+          # See the Windows job: OF's shared meshVbo aliases under this app's
+          # multi-window GL context, so draw labels via an ofVboMesh (own vbo).
+          perl -i -pe 's{#include "ofxSmartFont.h"}{#include "ofxSmartFont.h"\n#include "ofVboMesh.h"}' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
+          perl -i -pe 's/ttf\.drawString\(s, x, y\);/ofVboMesh _m = ttf.getStringMesh(s, x, y); const ofTexture& _t = ttf.getFontTexture(); _t.bind(); _m.draw(OF_MESH_FILL); _t.unbind();/' ofxDatGui/src/libs/ofxSmartFont/ofxSmartFont.cpp
           # ofxCv's Tracker.h declares its constructor with the non-standard
           # injected-class-name form `Tracker<T>()`, which GCC/Clang reject
           # (MSVC tolerates it). Normalise to the legal `Tracker()` spelling.
