@@ -96,31 +96,25 @@ The installer is safe to re-run. (If you also have the `DuneBox-sandcam` repo
 checked out, its `Install Desktop Shortcuts.cmd` sets up both apps at once.)
 
 ### Build from source (if you want to modify the code)
-This repo ships **no IDE project files** — generate them for your platform with
-OpenFrameworks' projectGenerator (the committed app is otherwise OF-0.9 stale).
+This repo ships **no IDE project files** — generate them with
+OpenFrameworks' projectGenerator.
 
 > **Git LFS:** the reference map imagery under `bin/data/` is stored with
 > [Git LFS](https://git-lfs.com). Install it (`git lfs install`) before cloning
 > so those assets download as real files rather than pointer stubs.
-```bash
-# 1. Install OpenFrameworks 0.12.0 from openframeworks.cc
+```powershell
+# 1. Install OpenFrameworks 0.12.0 from openframeworks.cc (VS release)
 # 2. Clone this repo into  openFrameworks/apps/myApps/Magic-Sand
 #    (keep the folder name "Magic-Sand" so the binary is Magic-Sand.exe)
 # 3. Install community addons into openFrameworks/addons/:
 #      ofxCv, ofxParagraph, ofxModal, and the thomwolf fork of ofxDatGui
 #      (ofxKinect, ofxOpenCv, ofxXmlSettings ship with OpenFrameworks)
-# 4. Generate the project for your platform, then build:
-#    Windows: run projectGenerator (import the folder) -> open the generated
-#             Magic-Sand.sln -> x64 Release -> Build
-#    macOS:   run projectGenerator (import the folder) -> open the generated
-#             Magic-Sand.xcodeproj -> Build
-#    Linux:   make && make run
+# 4. Run projectGenerator (import the folder) -> open the generated
+#    Magic-Sand.sln -> x64 Release -> Build
 ```
 > The CI workflow (`.github/workflows/build.yml`) is the reference for the exact
 > addon pins and build flags. It builds and releases on **Windows** (MSVC, via
-> projectGenerator) and compile-checks every push on **Linux** (GCC, via
-> OpenFrameworks' template Makefiles); a **macOS** build (Clang) runs on demand
-> via *Run workflow* and on release tags. Windows is the only release target.
+> projectGenerator). Windows is the only supported platform.
 
 Press **`w`** to toggle water simulation. Works without a Kinect (test terrain fallback).
 
