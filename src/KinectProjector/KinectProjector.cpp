@@ -45,7 +45,7 @@ azureUnsupported(false)
 	applicationState = APPLICATION_STATE_SETUP;
     projWindow = p;
 	TemporalFilteringType = 1;
-	DumpDebugFiles = true;
+	DumpDebugFiles = false;
 	DebugFileOutDir = "DebugFiles//";
 }
 
@@ -1649,6 +1649,7 @@ void KinectProjector::startApplication()
 	drawKinectView = false;
 	gui->getToggle("Draw kinect color view")->setChecked(drawKinectColorView);
 	gui->getToggle("Draw kinect depth view")->setChecked(drawKinectView);
+	kinectgrabber.setNeedColorFrame(false);
 	updateStatusGUI();
 }
 
@@ -1666,6 +1667,7 @@ void KinectProjector::startFullCalibration()
 	}
 
 	applicationState = APPLICATION_STATE_CALIBRATING;
+	kinectgrabber.setNeedColorFrame(true);
     calibrationState = CALIBRATION_STATE_FULL_AUTO_CALIBRATION;
     fullCalibState = FULL_CALIBRATION_STATE_ROI_DETERMINATION;
 	ROICalibState = ROI_CALIBRATION_STATE_INIT;
@@ -1678,6 +1680,7 @@ void KinectProjector::startFullCalibration()
 
 void KinectProjector::startAutomaticROIDetection(){
 	applicationState = APPLICATION_STATE_CALIBRATING;
+	kinectgrabber.setNeedColorFrame(true);
     calibrationState = CALIBRATION_STATE_ROI_AUTO_DETERMINATION;
     ROICalibState = ROI_CALIBRATION_STATE_INIT;
     ofLogVerbose("KinectProjector") << "onButtonEvent(): Finding ROI" ;
@@ -1710,6 +1713,7 @@ void KinectProjector::startAutomaticKinectProjectorCalibration(){
 	calibrationText = "Starting projector/kinect calibration";
 
 	applicationState = APPLICATION_STATE_CALIBRATING;
+	kinectgrabber.setNeedColorFrame(true);
     calibrationState = CALIBRATION_STATE_PROJ_KINECT_AUTO_CALIBRATION;
     autoCalibState = AUTOCALIB_STATE_INIT_POINT;
     confirmModal->setTitle("Calibrate projector");
@@ -1845,6 +1849,7 @@ void KinectProjector::onToggleEvent(ofxDatGuiToggleEvent e){
 			drawKinectView = false;
 			gui->getToggle("Draw kinect depth view")->setChecked(drawKinectView);
 		}
+		kinectgrabber.setNeedColorFrame(drawKinectColorView || applicationState != APPLICATION_STATE_RUNNING);
 	}
 	else if (e.target->is("Dump Debug"))
 	{

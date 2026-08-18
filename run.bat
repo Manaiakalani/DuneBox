@@ -67,11 +67,23 @@ exit /b 1
 :extract
 echo  Extracting to bin\...
 if not exist "%BINDIR%" mkdir "%BINDIR%"
-:: Expand, then strip Mark-of-the-Web from every extracted file. Downloaded
-:: zips tag their contents with MOTW, which Smart App Control / SmartScreen use
-:: to block unsigned binaries (the app is an unsigned OpenFrameworks build).
-:: Unblock-File removes that tag so the freshly-downloaded exe launches normally.
-powershell -NoProfile -Command "Expand-Archive -Path '%ZIPFILE%' -DestinationPath '%BINDIR%' -Force; Get-ChildItem -LiteralPath '%BINDIR%' -Recurse -File | Unblock-File"
+:: Expand to TEMP first so a re-download never overwrites a live
+:: calibration.xml / kinectProjectorSettings.xml. Then copy the exe + DLLs
+:: (always refresh those) and merge data/ only for files that are missing.
+:: Also strip Mark-of-the-Web so Smart App Control / SmartScreen will launch
+:: the unsigned OpenFrameworks build.
+powershell -NoProfile -Command ^
+  "$ErrorActionPreference='Stop';" ^
+  "$tmp = Join-Path $env:TEMP 'dunebox-extract';" ^
+  "if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force };" ^
+  "New-Item -ItemType Directory -Path $tmp | Out-Null;" ^
+  "Expand-Archive -Path '%ZIPFILE%' -DestinationPath $tmp -Force;" ^
+  "$dest = '%BINDIR%';" ^
+  "Get-ChildItem $tmp -Recurse -Include *.exe,*.dll | ForEach-Object { Copy-Item $_.FullName -Destination $dest -Force };" ^
+  "$data = Get-ChildItem $tmp -Recurse -Directory -Filter data | Select-Object -First 1;" ^
+  "if ($data) { robocopy $data.FullName (Join-Path $dest 'data') /E /XC /XN /XO /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null };" ^
+  "Get-ChildItem -LiteralPath $dest -Recurse -File | Unblock-File;" ^
+  "Remove-Item $tmp -Recurse -Force"
 del "%ZIPFILE%" >nul 2>&1
 if not exist "%EXE%" (
     echo  Extract failed - Magic-Sand.exe not found.
