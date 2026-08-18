@@ -67,23 +67,15 @@ exit /b 1
 :extract
 echo  Extracting to bin\...
 if not exist "%BINDIR%" mkdir "%BINDIR%"
-:: Expand to TEMP first so a re-download never overwrites a live
-:: calibration.xml / kinectProjectorSettings.xml. Then copy the exe + DLLs
-:: (always refresh those) and merge data/ only for files that are missing.
-:: Also strip Mark-of-the-Web so Smart App Control / SmartScreen will launch
-:: the unsigned OpenFrameworks build.
-powershell -NoProfile -Command ^
-  "$ErrorActionPreference='Stop';" ^
-  "$tmp = Join-Path $env:TEMP 'dunebox-extract';" ^
-  "if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force };" ^
-  "New-Item -ItemType Directory -Path $tmp | Out-Null;" ^
-  "Expand-Archive -Path '%ZIPFILE%' -DestinationPath $tmp -Force;" ^
-  "$dest = '%BINDIR%';" ^
-  "Get-ChildItem $tmp -Recurse -Include *.exe,*.dll | ForEach-Object { Copy-Item $_.FullName -Destination $dest -Force };" ^
-  "$data = Get-ChildItem $tmp -Recurse -Directory -Filter data | Select-Object -First 1;" ^
-  "if ($data) { robocopy $data.FullName (Join-Path $dest 'data') /E /XC /XN /XO /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null };" ^
-  "Get-ChildItem -LiteralPath $dest -Recurse -File | Unblock-File;" ^
-  "Remove-Item $tmp -Recurse -Force"
+:: extract-release.ps1 unpacks to TEMP, copies exe/DLLs, and merges data/
+:: without overwriting a live calibration.xml. A multi-line -Command here
+:: would be split into separate PowerShell arguments by cmd.exe.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%extract-release.ps1" "%ZIPFILE%" "%BINDIR%"
+if errorlevel 1 (
+    echo  Extract failed.
+    pause
+    exit /b 1
+)
 del "%ZIPFILE%" >nul 2>&1
 if not exist "%EXE%" (
     echo  Extract failed - Magic-Sand.exe not found.

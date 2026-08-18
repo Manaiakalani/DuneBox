@@ -611,7 +611,7 @@ void ofApp::detectRainGesture() {
 	// Hands sit in a band above the sand. A tall mountain or a bad base plane
 	// used to light up thousands of cells ("> 50 mm") and flood the sim.
 	const float rainMinMm = 80.0f;
-	const float rainMaxMm = 280.0f;
+	const float rainMaxMm = 400.0f;
 	const float maxOccupancy = 0.20f;
 	const int maxSources = 16;
 	const int step = 8;
