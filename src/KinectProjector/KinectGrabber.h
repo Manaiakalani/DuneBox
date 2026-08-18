@@ -113,6 +113,12 @@ public:
 	// Should the entire frame be filtered and thereby ignoring the KinectROI
 	void setFullFrameFiltering(bool ff, ofRectangle ROI);
 
+	// Color remap of the 1080p Kinect v2 frame is expensive. Keep it on
+	// during calibration / the color debug view; skip it while RUNNING.
+	void setNeedColorFrame(bool need) {
+		needColorFrame.store(need, std::memory_order_relaxed);
+	}
+
 	ofThreadChannel<ofFloatPixels> filtered;
 	ofThreadChannel<ofPixels> colored;
 	// Carry the gradient field by value (a copy per frame) rather than a raw
@@ -197,6 +203,7 @@ private:
 	bool doInPaint;
 
 	bool doFullFrameFiltering;
+	std::atomic<bool> needColorFrame{true};
     // Debug
 //    int blockX, blockY;
 };

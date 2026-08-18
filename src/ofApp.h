@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "WaterSimulation/ComputeWaterSimulation.h"
 #include "Diagnostics.h"
 #include "Bridge/Bridge.h"
+#include <memory>
 
 class ofApp : public ofBaseApp {
 
@@ -58,7 +59,7 @@ public:
 
 private:
 	std::shared_ptr<KinectProjector> kinectProjector;
-	SandSurfaceRenderer* sandSurfaceRenderer;
+	std::unique_ptr<SandSurfaceRenderer> sandSurfaceRenderer;
 	CMapGameController mapGameController;
 	CBoidGameController boidGameController;
 
