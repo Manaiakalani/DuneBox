@@ -569,6 +569,7 @@ void ComputeWaterSimulation::setFluidType(FluidType type) {
         baseWaterOpacity = waterOpacity;
         if (attenuation > 0.85f) attenuation = 0.85f;
         waterOpacity = 8.0f;
+        lavaTemperature = 1.0f;
     } else {
         attenuation = baseAttenuation;
         waterOpacity = baseWaterOpacity;

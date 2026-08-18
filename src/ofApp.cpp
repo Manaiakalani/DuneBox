@@ -608,12 +608,15 @@ void ofApp::detectRainGesture() {
 		return;
 	}
 
-	// Hands sit in a band above the sand. A tall mountain or a bad base plane
-	// used to light up thousands of cells ("> 50 mm") and flood the sim.
+	// Hands are local spikes above nearby sand. A ridge in the same 80–400 mm
+	// band used to rain every frame because occupancy alone still let cones
+	// through. Require prominence vs the 3x3 coarse neighbourhood.
 	const float rainMinMm = 80.0f;
 	const float rainMaxMm = 400.0f;
-	const float maxOccupancy = 0.20f;
-	const int maxSources = 16;
+	const float minProminenceMm = 50.0f;
+	const float maxOccupancy = 0.08f;
+	const int minHits = 3;
+	const int maxSources = 8;
 	const int step = 8;
 
 	ofRectangle roi = kinectProjector->getKinectROI();
@@ -623,24 +626,44 @@ void ofApp::detectRainGesture() {
 	int startY = (int)roi.y;
 	int endX = (int)(roi.x + roi.width);
 	int endY = (int)(roi.y + roi.height);
+	int cols = std::max(1, (endX - startX + step - 1) / step);
+	int rows = std::max(1, (endY - startY + step - 1) / step);
 
-	std::vector<ofVec2f> hits;
+	std::vector<float> elevs((size_t)rows * (size_t)cols, 0.0f);
 	int samples = 0;
-	for (int y = startY; y < endY; y += step) {
-		for (int x = startX; x < endX; x += step) {
+	for (int r = 0; r < rows; ++r) {
+		for (int c = 0; c < cols; ++c) {
+			int x = startX + c * step;
+			int y = startY + r * step;
+			elevs[(size_t)r * cols + c] = kinectProjector->elevationAtKinectCoord(x, y);
 			++samples;
-			float elev = kinectProjector->elevationAtKinectCoord(x, y);
-			if (elev >= rainMinMm && elev <= rainMaxMm) {
-				hits.push_back(ofVec2f((float)x, (float)y));
-			}
 		}
 	}
-	if (samples == 0 || hits.empty()) return;
+
+	std::vector<ofVec2f> hits;
+	for (int r = 0; r < rows; ++r) {
+		for (int c = 0; c < cols; ++c) {
+			float elev = elevs[(size_t)r * cols + c];
+			if (elev < rainMinMm || elev > rainMaxMm) continue;
+			float localMin = elev;
+			for (int dr = -1; dr <= 1; ++dr) {
+				for (int dc = -1; dc <= 1; ++dc) {
+					int rr = r + dr;
+					int cc = c + dc;
+					if (rr < 0 || cc < 0 || rr >= rows || cc >= cols) continue;
+					localMin = std::min(localMin, elevs[(size_t)rr * cols + cc]);
+				}
+			}
+			if (elev - localMin < minProminenceMm) continue;
+			hits.push_back(ofVec2f((float)(startX + c * step), (float)(startY + r * step)));
+		}
+	}
+	if (samples == 0 || (int)hits.size() < minHits) return;
 	if ((float)hits.size() / (float)samples > maxOccupancy) return;
 
-	const int stride = std::max(1, (int)hits.size() / maxSources);
 	const float simW = (float)waterSimGetSimWidth();
 	const float simH = (float)waterSimGetSimHeight();
+	const int stride = std::max(1, (int)hits.size() / maxSources);
 	int added = 0;
 	for (size_t i = 0; i < hits.size() && added < maxSources; i += (size_t)stride) {
 		float simX = ((hits[i].x - startX) / roi.width) * simW;

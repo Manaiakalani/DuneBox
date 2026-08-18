@@ -1841,6 +1841,7 @@ void KinectProjector::onToggleEvent(ofxDatGuiToggleEvent e){
 			drawKinectColorView = false;
 			gui->getToggle("Draw kinect color view")->setChecked(drawKinectColorView);
 		}
+		kinectgrabber.setNeedColorFrame(drawKinectColorView || applicationState != APPLICATION_STATE_RUNNING);
     }
 	else if (e.target->is("Draw kinect color view")) {
 		drawKinectColorView = e.checked;

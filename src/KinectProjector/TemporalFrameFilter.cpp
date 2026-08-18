@@ -205,7 +205,7 @@ bool CTemporalFrameFilter::ComputeMedianImage()
 
 bool CTemporalFrameFilter::ComputeAverageImageCol()
 {
-	if (!validBuffer && nFrames > 0)
+	if (!validBuffer || nFrames <= 0)
 		return false;
 
 	for (int y = 0; y < sizeY; y++)
