@@ -20,11 +20,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ***********************************************************************/
 
 #include "ofApp.h"
+#include <algorithm>
+#include <vector>
 
-ofApp::~ofApp() {
-	delete sandSurfaceRenderer;
-	sandSurfaceRenderer = nullptr;
-}
+ofApp::~ofApp() = default;
 
 void ofApp::setup() {
 	// OF basics
@@ -42,7 +41,7 @@ void ofApp::setup() {
 	kinectProjector->setup(true);
 	
 	// Setup sandSurfaceRenderer
-	sandSurfaceRenderer = new SandSurfaceRenderer(kinectProjector, projWindow);
+	sandSurfaceRenderer = std::make_unique<SandSurfaceRenderer>(kinectProjector, projWindow);
 	sandSurfaceRenderer->setup(true);
 
 	// Theme display overlay state
@@ -549,7 +548,10 @@ void ofApp::mouseExited(int x, int y) {
 }
 
 void ofApp::windowResized(int w, int h) {
-
+	if (!kinectProjector) return;
+	ofVec2f kinectRes = kinectProjector->getKinectRes();
+	if (kinectRes.x <= 0 || kinectRes.y <= 0) return;
+	mainWindowROI = ofRectangle((w - kinectRes.x) / 2, (h - kinectRes.y) / 2, kinectRes.x, kinectRes.y);
 }
 
 void ofApp::gotMessage(ofMessage msg) {
@@ -606,13 +608,14 @@ void ofApp::detectRainGesture() {
 		return;
 	}
 
-	// Threshold-based rain detection: scan a coarse grid of the depth image.
-	// Pixels with elevation > rainThreshold (mm above base plane) are treated
-	// as a hand - add water at those kinect-space coordinates.
-	const float rainThreshold = 50.0f; // mm above base plane = hand
-	const int step = 8; // sample every 8th pixel (80x60 grid)
+	// Hands sit in a band above the sand. A tall mountain or a bad base plane
+	// used to light up thousands of cells ("> 50 mm") and flood the sim.
+	const float rainMinMm = 80.0f;
+	const float rainMaxMm = 400.0f;
+	const float maxOccupancy = 0.20f;
+	const int maxSources = 16;
+	const int step = 8;
 
-	ofVec2f kinectRes = kinectProjector->getKinectRes();
 	ofRectangle roi = kinectProjector->getKinectROI();
 	if (roi.width <= 0 || roi.height <= 0) return;
 
@@ -621,16 +624,29 @@ void ofApp::detectRainGesture() {
 	int endX = (int)(roi.x + roi.width);
 	int endY = (int)(roi.y + roi.height);
 
+	std::vector<ofVec2f> hits;
+	int samples = 0;
 	for (int y = startY; y < endY; y += step) {
 		for (int x = startX; x < endX; x += step) {
+			++samples;
 			float elev = kinectProjector->elevationAtKinectCoord(x, y);
-			if (elev > rainThreshold) {
-				// Map kinect pixel to water sim grid coordinates
-				float simX = ((float)(x - startX) / roi.width) * waterSimGetSimWidth();
-				float simY = ((float)(y - startY) / roi.height) * waterSimGetSimHeight();
-				waterSimAddWater(simX, simY, 15.0f, 0.3f);
+			if (elev >= rainMinMm && elev <= rainMaxMm) {
+				hits.push_back(ofVec2f((float)x, (float)y));
 			}
 		}
+	}
+	if (samples == 0 || hits.empty()) return;
+	if ((float)hits.size() / (float)samples > maxOccupancy) return;
+
+	const int stride = std::max(1, (int)hits.size() / maxSources);
+	const float simW = (float)waterSimGetSimWidth();
+	const float simH = (float)waterSimGetSimHeight();
+	int added = 0;
+	for (size_t i = 0; i < hits.size() && added < maxSources; i += (size_t)stride) {
+		float simX = ((hits[i].x - startX) / roi.width) * simW;
+		float simY = ((hits[i].y - startY) / roi.height) * simH;
+		waterSimAddWater(simX, simY, 15.0f, 0.3f);
+		++added;
 	}
 }
 

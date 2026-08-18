@@ -47,6 +47,8 @@ ComputeWaterSimulation::ComputeWaterSimulation()
     , fluidType(FLUID_WATER)
     , lavaTemperature(1.0f)
     , evaporationRate(0.0f)
+    , baseAttenuation(0.99f)
+    , baseWaterOpacity(5.0f)
     , groupsX(0)
     , groupsY(0)
     , bathymetryUpdateProgram(0)
@@ -560,11 +562,20 @@ void ComputeWaterSimulation::setMaxStepsPerFrame(int steps) { maxStepsPerFrame =
 void ComputeWaterSimulation::setEnabled(bool e) { enabled = e; }
 
 void ComputeWaterSimulation::setFluidType(FluidType type) {
-    fluidType = type;
-    // Lava has higher viscosity -> more attenuation
-    if (type == FLUID_LAVA && attenuation > 0.85f) {
-        attenuation = 0.85f;
+    if (type == fluidType) return;
+
+    if (type == FLUID_LAVA) {
+        baseAttenuation = attenuation;
+        baseWaterOpacity = waterOpacity;
+        if (attenuation > 0.85f) attenuation = 0.85f;
+        waterOpacity = 8.0f;
+    } else {
+        attenuation = baseAttenuation;
+        waterOpacity = baseWaterOpacity;
     }
+    fluidType = type;
+    ofLogNotice("ComputeWaterSimulation") << "Fluid type: "
+        << (fluidType == FLUID_LAVA ? "LAVA" : "WATER");
 }
 
 void ComputeWaterSimulation::setLavaTemperature(float temp) {

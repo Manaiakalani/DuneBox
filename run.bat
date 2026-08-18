@@ -67,11 +67,15 @@ exit /b 1
 :extract
 echo  Extracting to bin\...
 if not exist "%BINDIR%" mkdir "%BINDIR%"
-:: Expand, then strip Mark-of-the-Web from every extracted file. Downloaded
-:: zips tag their contents with MOTW, which Smart App Control / SmartScreen use
-:: to block unsigned binaries (the app is an unsigned OpenFrameworks build).
-:: Unblock-File removes that tag so the freshly-downloaded exe launches normally.
-powershell -NoProfile -Command "Expand-Archive -Path '%ZIPFILE%' -DestinationPath '%BINDIR%' -Force; Get-ChildItem -LiteralPath '%BINDIR%' -Recurse -File | Unblock-File"
+:: extract-release.ps1 unpacks to TEMP, copies exe/DLLs, and merges data/
+:: without overwriting a live calibration.xml. A multi-line -Command here
+:: would be split into separate PowerShell arguments by cmd.exe.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%extract-release.ps1" "%ZIPFILE%" "%BINDIR%"
+if errorlevel 1 (
+    echo  Extract failed.
+    pause
+    exit /b 1
+)
 del "%ZIPFILE%" >nul 2>&1
 if not exist "%EXE%" (
     echo  Extract failed - Magic-Sand.exe not found.

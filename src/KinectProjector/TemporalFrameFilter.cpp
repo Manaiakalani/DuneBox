@@ -58,11 +58,12 @@ void CTemporalFrameFilter::Init(int sx, int sy, int frames)
 
 void CTemporalFrameFilter::NewFrame(unsigned char* imgData, int sx, int sy, int nFrames)
 {
-	if (!imgDataBuffer)
+	if (!imgDataBuffer || sx != sizeX || sy != sizeY)
 	{
 		ofLogVerbose("CTemporalFrameFilter") << "NewFrame(): No buffer allocated: allocating";
 		Init(sx, sy, nFrames);
 	}
+	if (this->nFrames <= 0) return;
 	int offset = currentFrame * sizeX * sizeY;
 	for (int i = 0; i < sizeX *sizeY; i++)
 	{
@@ -74,7 +75,7 @@ void CTemporalFrameFilter::NewFrame(unsigned char* imgData, int sx, int sy, int 
 	}
 
 	currentFrame++;
-	if (currentFrame >= nFrames)
+	if (currentFrame >= this->nFrames)
 	{
 		validBuffer = true;
 		currentFrame = 0;
@@ -84,11 +85,12 @@ void CTemporalFrameFilter::NewFrame(unsigned char* imgData, int sx, int sy, int 
 
 void CTemporalFrameFilter::NewColFrame(unsigned char* imgData, int sx, int sy, int nFrames /*= 15*/)
 {
-	if (!imgDataBufferCol)
+	if (!imgDataBufferCol || sx != sizeX || sy != sizeY)
 	{
 		std::cerr << "CTemporalFrameFilter::NewFrame: No color buffer allocated: allocating" << std::endl;
 		Init(sx, sy, nFrames);
 	}
+	if (this->nFrames <= 0) return;
 	int offset = currentFrame * sizeX * sizeY * 3;
 	for (int i = 0; i < sizeX *sizeY; i++)
 	{
@@ -100,7 +102,7 @@ void CTemporalFrameFilter::NewColFrame(unsigned char* imgData, int sx, int sy, i
 		imgDataBufferCol[offset + 3 * i + 2] = B;
 	}
 	currentFrame++;
-	if (currentFrame >= nFrames)
+	if (currentFrame >= this->nFrames)
 	{
 		validBuffer = true;
 		currentFrame = 0;

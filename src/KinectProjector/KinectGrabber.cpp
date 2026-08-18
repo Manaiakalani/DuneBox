@@ -267,7 +267,9 @@ void KinectGrabber::threadedFunction() {
                     filter();
                     filteredframe.setImageType(OF_IMAGE_GRAYSCALE);
                     updateGradientField();
-                    updateKinectV2ColorInDepthFrame();
+                    if (needColorFrame.load(std::memory_order_relaxed)) {
+                        updateKinectV2ColorInDepthFrame();
+                    }
                 }
             }
         } else
@@ -291,6 +293,9 @@ void KinectGrabber::threadedFunction() {
 			gradient.send(std::vector<ofVec2f>(gradField, gradField + gradFieldcols * gradFieldrows));
             colored.send(ofPixels(kinectColorImage.getPixels()));
             storedframes.fetch_add(1, std::memory_order_release);
+        } else {
+            // Depth is already queued for the main thread; do not spin a core.
+            ofSleepMillis(2);
         }
         
     }

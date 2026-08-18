@@ -173,6 +173,8 @@ private:
     FluidType fluidType;
     float lavaTemperature; // 0.0 = cooled, 1.0 = molten
     float evaporationRate;
+    float baseAttenuation;
+    float baseWaterOpacity;
 
     // --- Workgroup dimensions ---
     int groupsX, groupsY;

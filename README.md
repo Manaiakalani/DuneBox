@@ -2,7 +2,7 @@
 
 > *Like a sandbox, but epic.*
 
-A cross-platform augmented reality sandbox that projects real-time topographic maps and GPU-accelerated water simulation onto physical sand using a Kinect depth camera and projector.
+A Windows augmented reality sandbox that projects real-time topographic maps and GPU-accelerated water simulation onto physical sand using a Kinect depth camera and projector.
 
 ![Status](https://img.shields.io/badge/status-proof%20of%20concept-orange)
 ![Language](https://img.shields.io/badge/lang-C%2B%2B-blue)
@@ -22,7 +22,7 @@ A cross-platform augmented reality sandbox that projects real-time topographic m
 
 | Component | Recommendation |
 |---|---|
-| **Depth Sensor** | Kinect v1 (default), Kinect v2, Azure Kinect, or Orbbec Femto Bolt |
+| **Depth Sensor** | Kinect v2 (Windows default) or Kinect v1 |
 | **Projector** | Short-throw, 4:3 aspect, HDMI output |
 | **PC** | x86 quad-core + Nvidia GPU for water sim (Quadro P620 minimum) |
 | **Sandbox** | 40"×30" plywood box (4:3 ratio), Sandtastik White Play Sand |
@@ -31,10 +31,10 @@ A cross-platform augmented reality sandbox that projects real-time topographic m
 
 | Sensor | `kinectVersion` | Addon Required | Depth Resolution | Compile Flag |
 |---|---|---|---|---|
-| Kinect v1 (Xbox 360) | `1` (default) | ofxKinect (built-in) | 640×480 | — |
-| Kinect v2 (Xbox One) | `2` | ofxKinectForWindows2 + Kinect for Windows SDK 2.0 | 512×424 | `DUNEBOX_USE_KINECT_FOR_WINDOWS2` |
-| Azure Kinect DK | `3` | ofxAzureKinect + Azure Kinect SDK | 640×576 | `DUNEBOX_USE_AZURE_KINECT` |
-| Orbbec Femto Bolt | `3` | ofxAzureKinect + Azure Kinect SDK | 640×576 | `DUNEBOX_USE_AZURE_KINECT` |
+| Kinect v1 (Xbox 360) | `1` | ofxKinect (built-in) | 640×480 | — |
+| Kinect v2 (Xbox One) | `2` (committed default) | ofxKinectForWindows2 + Kinect for Windows SDK 2.0 | 512×424 | `DUNEBOX_USE_KINECT_FOR_WINDOWS2` |
+| Azure Kinect DK | `3` | **not supported in this binary** | — | — |
+| Orbbec Femto Bolt | `3` | **not supported in this binary** | — | — |
 
 ### Switching sensors
 
@@ -43,7 +43,7 @@ Edit `bin/data/settings/kinectProjectorSettings.xml` and add/change:
 <kinectVersion>2</kinectVersion>
 ```
 
-Values: `1` = Kinect V1, `2` = Kinect V2, `3` = Azure Kinect / Orbbec Femto Bolt.
+Values: `1` = Kinect V1, `2` = Kinect V2. `3` (Azure / Femto) is refused at startup.
 
 > **The pre-built Windows release already includes Kinect v2 support.** To use a
 > Kinect v2 on Windows: install the [Kinect for Windows Runtime 2.0](https://www.microsoft.com/download/details.aspx?id=44559)
@@ -61,14 +61,7 @@ The Windows CI build links Kinect v2 automatically. To reproduce locally:
 4. Add `DUNEBOX_USE_KINECT_FOR_WINDOWS2` to the project's preprocessor definitions.
 5. Regenerate the project (projectGenerator) and rebuild.
 
-### Building with Azure Kinect / Orbbec Femto Bolt support
-1. Install [Azure Kinect SDK v1.4+](https://learn.microsoft.com/azure/kinect-dk/sensor-sdk-download)
-2. Clone [ofxAzureKinect](https://github.com/prisonerjohn/ofxAzureKinect) into `openFrameworks/addons/`
-3. Add `ofxAzureKinect` to `addons.make`
-4. Add `-DDUNEBOX_USE_AZURE_KINECT` to compiler flags
-5. Rebuild
-
-> **Note:** The Orbbec Femto Bolt uses Azure Kinect-compatible firmware and works with the same SDK/addon.
+Azure Kinect / Orbbec Femto Bolt (`kinectVersion=3`) is **not supported** in the current Windows binary. Use sandcam for those sensors.
 
 ## Quick Start
 
