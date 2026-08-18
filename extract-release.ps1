@@ -27,10 +27,23 @@ try {
         Select-Object -First 1
     if ($data) {
         $destData = Join-Path $BinDir "data"
-        # robocopy uses 0-7 for success (including "files copied").
-        & robocopy $data.FullName $destData /E /XC /XN /XO /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
-        if ($LASTEXITCODE -ge 8) {
-            throw "robocopy failed with exit $LASTEXITCODE"
+        $srcSettings = Join-Path $data.FullName "settings"
+        $destSettings = Join-Path $destData "settings"
+        # Refresh shaders / color maps / fonts. Never overwrite live settings.
+        Get-ChildItem -LiteralPath $data.FullName -Force | Where-Object {
+            $_.Name -ne "settings"
+        } | ForEach-Object {
+            $destItem = Join-Path $destData $_.Name
+            if ($_.PSIsContainer) {
+                & robocopy $_.FullName $destItem /E /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+                if ($LASTEXITCODE -ge 8) { throw "robocopy failed with exit $LASTEXITCODE" }
+            } else {
+                Copy-Item -LiteralPath $_.FullName -Destination $destItem -Force
+            }
+        }
+        if (Test-Path -LiteralPath $srcSettings) {
+            & robocopy $srcSettings $destSettings /E /XC /XN /XO /NFL /NDL /NJH /NJS /nc /ns /np | Out-Null
+            if ($LASTEXITCODE -ge 8) { throw "robocopy failed with exit $LASTEXITCODE" }
         }
     }
     Get-ChildItem -LiteralPath $BinDir -Recurse -File | Unblock-File
