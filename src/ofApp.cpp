@@ -20,7 +20,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ***********************************************************************/
 
 #include "ofApp.h"
+#include "DuneBoxGuiTheme.h"
 #include <algorithm>
+#include <cmath>
+#include <map>
 #include <vector>
 
 ofApp::~ofApp() = default;
@@ -35,6 +38,8 @@ void ofApp::setup() {
 	ofSetLogLevel("ofFbo", OF_LOG_ERROR);
 	ofSetLogLevel("ofShader", OF_LOG_ERROR);
 	ofSetLogLevel("ofxKinect", OF_LOG_WARNING);
+
+	dunebox::GuiTheme::install();
 
 	// Setup kinectProjector
 	kinectProjector = std::make_shared<KinectProjector>(projWindow);
@@ -133,6 +138,23 @@ void ofApp::update() {
 				else waterSimFragment.setEnabled(on);
 				ofLogNotice("Bridge") << "Water simulation: " << (on ? "ON" : "OFF");
 			}
+		} else if (type == "command") {
+			// Dashboard commands relayed by sandcam; each maps to its key handler
+			// so keyboard and dashboard behave identically.
+			static const std::map<std::string, int> commandKeys = {
+				{"toggle_water", 'w'},
+				{"toggle_lava", 'l'},
+				{"erupt_volcano", 'v'},
+				{"cycle_theme", 't'},
+				{"toggle_day_night", 'n'},
+				{"start_app", ' '},
+			};
+			std::string action = msg.value("action", "");
+			auto it = commandKeys.find(action);
+			if (it != commandKeys.end()) {
+				ofLogNotice("Bridge") << "Dashboard command: " << action;
+				keyPressed(it->second);
+			}
 		} else if (type == "pong") {
 			ofLogVerbose("Bridge") << "Pong received";
 		} else if (type == "volcano_eruption") {
@@ -157,14 +179,28 @@ void ofApp::update() {
 		}
 	}
 
-	// Send water status every 60 frames
+	// Report state for the sandcam web dashboard twice a second
 	bridgeFrameCounter++;
-	if (bridgeFrameCounter >= 60) {
+	if (bridgeFrameCounter >= 30) {
 		bridgeFrameCounter = 0;
 		if (bridge.isConnected()) {
+			std::string appState = "idle";
+			switch (kinectProjector->GetApplicationState()) {
+				case KinectProjector::APPLICATION_STATE_SETUP: appState = "setup"; break;
+				case KinectProjector::APPLICATION_STATE_CALIBRATING: appState = "calibrating"; break;
+				case KinectProjector::APPLICATION_STATE_RUNNING: appState = "running"; break;
+				default: break;
+			}
 			ofJson status;
-			status["enabled"] = waterSimIsEnabled();
-			bridge.send("water_status", status);
+			status["app_state"] = appState;
+			status["kinect_connected"] = kinectProjector->isKinectConnected();
+			status["kinect_version"] = kinectProjector->getKinectVersion();
+			status["water"] = waterSimIsEnabled();
+			status["lava"] = waterSimIsLavaMode();
+			status["theme"] = sandSurfaceRenderer->getThemeName();
+			status["day_night"] = sandSurfaceRenderer->isDayNightEnabled();
+			status["fps"] = std::round(ofGetFrameRate() * 10.0f) / 10.0f;
+			bridge.send("dunebox_state", status);
 		}
 	}
 
@@ -230,15 +266,14 @@ void ofApp::draw()
 		// running screen. Shown only in SETUP (not while CALIBRATING, which has
 		// its own modal prompts).
 		std::string hint =
-			"DuneBox - SETUP (not yet calibrated)\n"
-			"The sand topography appears here once calibration is loaded.\n"
+			"DuneBox is in setup\n"
+			"The sand map appears here once calibration is loaded.\n"
 			"\n"
-			"Press SPACE to start. If it stays in SETUP, the projector is not\n"
-			"calibrated for this rig yet. Open the GUI 'Calibration' folder:\n"
-			"  1) flatten the sand,\n"
-			"  2) click 'Automatically calibrate kinect & projector',\n"
-			"  3) press SPACE again. (If ROI Status is not OK, first click\n"
-			"     'Manually define sand region'.) Watch the Status panel.";
+			"Press Space to start. If it stays in setup, calibrate this rig\n"
+			"from the Calibration panel on the right:\n"
+			"  1) Draw the sand region (skip if Sand region says set),\n"
+			"  2) flatten the sand, then Calibrate projector,\n"
+			"  3) press Space again. The Status panel shows what's missing.";
 		int hx = ofGetWidth() / 2 - 240;
 		int hy = ofGetHeight() / 2 - 60;
 		// Dark backing box so the white text is readable over any color feed.

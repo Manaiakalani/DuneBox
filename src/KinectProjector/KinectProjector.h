@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "KinectV2Handler.h"
 #include "AzureKinectHandler.h"
 #include "ofxModal.h"
+#include "../DuneBoxGuiTheme.h"
 
 #include "KinectProjectorCalibration.h"
 #include "Utils.h"
@@ -46,9 +47,35 @@ class ofxModalThemeProjKinect : public ofxModalTheme {
 public:
     ofxModalThemeProjKinect()
     {
+        using namespace dunebox;
         animation.speed = 0.1f;
-        fonts.title = ofxSmartFont::add("ofxbraitsch/fonts/HelveticaNeueLTStd-Md.otf", 20, "modal-title");
-        fonts.message = ofxSmartFont::add("ofxbraitsch/fonts/Roboto-Regular.ttf", 16, "modal-message");
+        fonts.title = ofxSmartFont::add("fonts/Geist-Medium.ttf", 18, "modal-title");
+        fonts.message = ofxSmartFont::add("fonts/Geist-Medium.ttf", 14, "modal-message");
+
+        color.modal.header = tok::surface();
+        color.modal.body = tok::surface();
+        color.modal.footer = tok::surface();
+        color.modal.hrule = tok::border();
+        color.text.title = tok::text();
+        color.text.body = tok::text2();
+        color.window.background = tok::bg();
+
+        auto& secondary = color.button.wireframe;
+        secondary.label = secondary.labelOnMouseOver = secondary.labelOnMouseDown = tok::text();
+        secondary.background = tok::surface2();
+        secondary.backgroundOnMouseOver = tok::surface3();
+        secondary.backgroundOnMouseDown = tok::surface2();
+        secondary.border = tok::borderStrong();
+
+        auto& primary = color.button.darkblue;
+        primary.label = primary.labelOnMouseOver = primary.labelOnMouseDown = tok::bg();
+        primary.background = tok::text();
+        primary.backgroundOnMouseOver = ofColor::fromHex(0xCFCFCF);
+        primary.backgroundOnMouseDown = tok::text2();
+        primary.border = tok::text();
+
+        layout.button.height = 44;
+        layout.button.width = 140;
     }
 };
 
