@@ -56,6 +56,17 @@ bool KinectGrabber::setup(){
 	doInPaint = 0;
 	doFullFrameFiltering = false;
 
+	if (kinectVersion == 4) {
+		ofLogNotice("kinectGrabber") << "setup(): using the DuneBox-sandcam depth relay";
+		width = NetworkDepthSource::WIDTH;
+		height = NetworkDepthSource::HEIGHT;
+		kinectDepthImage.allocate(width, height, 1);
+		filteredframe.allocate(width, height, 1);
+		kinectColorImage.allocate(width, height);
+		kinectColorImage.setUseTexture(false);
+		return openKinect();
+	}
+
 #ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
 	if (kinectVersion == 2) {
 		// Kinect for Windows v2 via the official Microsoft SDK.
@@ -106,6 +117,22 @@ bool KinectGrabber::setup(){
 }
 
 bool KinectGrabber::openKinect() {
+	if (kinectVersion == 4) {
+		if (!networkDepth.open()) {
+			ofLogNotice("kinectGrabber") << "openKinect(): sandcam's depth relay is not reachable yet. "
+				"Turn on \"Share this sensor with DuneBox\" in the sandcam dashboard.";
+			kinectOpened = false;
+			return false;
+		}
+		// Wait (up to ~3 s) for the first frame so getWorldMatrix() sees the
+		// sensor's real field of view instead of the defaults. The grabber
+		// thread leaves the socket alone until kinectOpened is set below.
+		for (int i = 0; i < 15 && networkDepth.isConnected(); ++i) {
+			if (networkDepth.update()) break;
+		}
+		kinectOpened = networkDepth.isConnected();
+		return kinectOpened;
+	}
 #ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
 	if (kinectVersion == 2) {
 		// (Re)open if not currently open so a retry after a transient failure
@@ -254,6 +281,9 @@ void KinectGrabber::threadedFunction() {
         this->actions.clear();
         this->actionsLock.unlock();
         
+        if (kinectVersion == 4) {
+            updateNetworkDepth();
+        } else
 #ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
         if (kinectVersion == 2) {
             kinectV2Device.update();
@@ -299,6 +329,9 @@ void KinectGrabber::threadedFunction() {
         }
         
     }
+    if (kinectVersion == 4) {
+        networkDepth.close();
+    } else
 #ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
     if (kinectVersion == 2) {
         kinectV2Device.close();
@@ -778,6 +811,13 @@ ofMatrix4x4 KinectGrabber::getWorldMatrix() {
 	if (!kinectOpened) {
 		return mat;
 	}
+	if (kinectVersion == 4) {
+		// sandcam sends the pixel -> camera-space mapping with every frame.
+		return ofMatrix4x4(networkDepth.sx, 0, 0, networkDepth.ax,
+			0, networkDepth.sy, 0, networkDepth.ay,
+			0, 0, 0, 1,
+			0, 0, 0, 1);
+	}
 #ifdef DUNEBOX_USE_KINECT_FOR_WINDOWS2
 	if (kinectVersion == 2) {
 		// Derive an affine pixel->world mapping from the Kinect v2
@@ -852,3 +892,46 @@ void KinectGrabber::updateKinectV2ColorInDepthFrame() {
 	kinectColorImage.setFromPixels(dst);
 }
 #endif
+
+void KinectGrabber::updateNetworkDepth() {
+	// Until the first open succeeds, KinectProjector retries openKinect() from
+	// the main thread; only take over reconnecting after a dropped link.
+	if (!kinectOpened) {
+		ofSleepMillis(50);
+		return;
+	}
+	if (!networkDepth.isConnected()) {
+		float now = ofGetElapsedTimef();
+		if (now - lastNetworkConnectTry > 2.0f) {
+			lastNetworkConnectTry = now;
+			networkDepth.open();
+		}
+		ofSleepMillis(50);
+		return;
+	}
+
+	networkDepth.setWantColor(needColorFrame.load(std::memory_order_relaxed));
+	if (!networkDepth.update()) return;
+
+	kinectDepthImage = networkDepth.getDepthPixels();
+	filter();
+	filteredframe.setImageType(OF_IMAGE_GRAYSCALE);
+	updateGradientField();
+
+	if (networkDepth.hasColor()) {
+		kinectColorImage.setFromPixels(networkDepth.getColorPixels());
+	} else if (needColorFrame.load(std::memory_order_relaxed)) {
+		// No colour from this sensor: show depth as grey (near = bright) so
+		// the colour view isn't blank.
+		ofPixels grey;
+		grey.allocate(width, height, OF_PIXELS_RGB);
+		const unsigned short* d = kinectDepthImage.getData();
+		for (size_t i = 0; i < (size_t)width * height; ++i) {
+			unsigned char v = d[i] == 0 ? 0 : (unsigned char)ofClamp(255.0f - (d[i] - 500.0f) * 0.25f, 0.0f, 255.0f);
+			grey[i * 3 + 0] = v;
+			grey[i * 3 + 1] = v;
+			grey[i * 3 + 2] = v;
+		}
+		kinectColorImage.setFromPixels(grey);
+	}
+}

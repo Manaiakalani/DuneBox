@@ -335,7 +335,8 @@ private:
     // kinectVersion: 1 = Kinect V1 (default, ofxKinect)
     //               2 = Kinect V2 (ofxKinectV2, requires DUNEBOX_USE_KINECT_V2)
     //               3 = Azure Kinect / Orbbec Femto Bolt (NOT YET SUPPORTED)
-    int                         kinectVersion;  // 1, 2, or 3
+    //               4 = depth relayed by DuneBox-sandcam (Orbbec, RealSense, ...)
+    int                         kinectVersion;  // 1, 2, 3 or 4
     bool                        azureUnsupported;  // true if kinectVersion==3 (unsupported)
     KinectV2Handler             kinectV2;
     AzureKinectHandler          azureKinect;

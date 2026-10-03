@@ -106,7 +106,8 @@ void KinectProjector::setup(bool sdisplayGui)
         // Azure Kinect / Orbbec Femto Bolt pipeline is not yet implemented.
         // The update() loop relies on kinectgrabber channels (filtered/colored/gradient)
         // which are not wired for Azure. Mark as unsupported to avoid silent failures.
-        ofLogError("KinectProjector") << "Azure Kinect (kinectVersion=3) is not supported in this build; set kinectVersion=1 or 2 in settings/kinectProjectorSettings.xml";
+        ofLogError("KinectProjector") << "Azure Kinect (kinectVersion=3) is not supported in this build. "
+            "For Azure Kinect, Orbbec Femto or RealSense, set kinectVersion=4 and share the sensor from DuneBox-sandcam.";
         kinectOpened = false;
         azureUnsupported = true;
     } else {
