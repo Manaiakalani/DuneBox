@@ -139,22 +139,7 @@ void ofApp::update() {
 				ofLogNotice("Bridge") << "Water simulation: " << (on ? "ON" : "OFF");
 			}
 		} else if (type == "command") {
-			// Dashboard commands relayed by sandcam; each maps to its key handler
-			// so keyboard and dashboard behave identically.
-			static const std::map<std::string, int> commandKeys = {
-				{"toggle_water", 'w'},
-				{"toggle_lava", 'l'},
-				{"erupt_volcano", 'v'},
-				{"cycle_theme", 't'},
-				{"toggle_day_night", 'n'},
-				{"start_app", ' '},
-			};
-			std::string action = msg.value("action", "");
-			auto it = commandKeys.find(action);
-			if (it != commandKeys.end()) {
-				ofLogNotice("Bridge") << "Dashboard command: " << action;
-				keyPressed(it->second);
-			}
+			handleDashboardCommand(msg);
 		} else if (type == "pong") {
 			ofLogVerbose("Bridge") << "Pong received";
 		} else if (type == "volcano_eruption") {
@@ -200,6 +185,13 @@ void ofApp::update() {
 			status["theme"] = sandSurfaceRenderer->getThemeName();
 			status["day_night"] = sandSurfaceRenderer->isDayNightEnabled();
 			status["fps"] = std::round(ofGetFrameRate() * 10.0f) / 10.0f;
+			float evap = waterSimGetEvaporation();
+			status["evaporation"] = evap <= 0.0f ? "off" : (evap < 0.08f ? "slow" : "fast");
+			status["hand_rain"] = handRainEnabled;
+			status["roi_calibrated"] = kinectProjector->isROICalibrated();
+			status["projector_calibrated"] = kinectProjector->isCalibrated();
+			status["calibration_text"] = kinectProjector->getCalibrationText();
+			status["awaiting_confirm"] = kinectProjector->isAwaitingConfirmation();
 			bridge.send("dunebox_state", status);
 		}
 	}
@@ -239,7 +231,7 @@ void ofApp::update() {
 		}
 
 		// Rain gesture detection
-		detectRainGesture();
+		if (handRainEnabled) detectRainGesture();
 	}
 }
 
@@ -544,6 +536,51 @@ void ofApp::keyPressed(int key)
 		volcanoSourceY = cy;
 		ofLogNotice("ofApp") << "Volcano eruption triggered at center";
 	}
+	else if (key == 'x')
+	{
+		waterSimClear();
+		ofLogNotice("ofApp") << "Water cleared";
+	}
+}
+
+void ofApp::handleDashboardCommand(const ofJson& msg)
+{
+	// Commands that already have a key map to it, so keyboard and dashboard
+	// behave identically.
+	static const std::map<std::string, int> commandKeys = {
+		{"toggle_water", 'w'},
+		{"toggle_lava", 'l'},
+		{"erupt_volcano", 'v'},
+		{"cycle_theme", 't'},
+		{"toggle_day_night", 'n'},
+		{"start_app", ' '},
+		{"dry_water", 'x'},
+	};
+	const std::string action = msg.value("action", "");
+	ofLogNotice("Bridge") << "Dashboard command: " << action;
+
+	auto it = commandKeys.find(action);
+	if (it != commandKeys.end()) {
+		keyPressed(it->second);
+	} else if (action == "set_evaporation") {
+		const std::string level = (msg.contains("value") && msg["value"].is_string())
+			? msg["value"].get<std::string>() : "off";
+		waterSimSetEvaporation(level == "fast" ? 0.12f : level == "slow" ? 0.03f : 0.0f);
+	} else if (action == "toggle_hand_rain") {
+		handRainEnabled = !handRainEnabled;
+	} else if (action == "detect_sand_region") {
+		kinectProjector->startAutomaticROIDetection();
+	} else if (action == "calibrate_projector") {
+		kinectProjector->startAutomaticKinectProjectorCalibration();
+	} else if (action == "full_calibration") {
+		kinectProjector->startFullCalibration();
+	} else if (action == "calibration_confirm") {
+		kinectProjector->remoteConfirm();
+	} else if (action == "calibration_cancel") {
+		kinectProjector->remoteCancel();
+	} else {
+		ofLogWarning("Bridge") << "Unknown dashboard command: " << action;
+	}
 }
 
 void ofApp::keyReleased(int key) {
@@ -773,6 +810,20 @@ void ofApp::waterSimSetLavaMode(bool enabled) {
 	} else {
 		waterSimFragment.setLavaMode(enabled);
 	}
+}
+
+void ofApp::waterSimClear() {
+	if (useComputeWaterSim) waterSimCompute.clearWater();
+	else waterSimFragment.clearWater();
+}
+
+void ofApp::waterSimSetEvaporation(float rate) {
+	if (useComputeWaterSim) waterSimCompute.setEvaporationRate(rate);
+	else waterSimFragment.setEvaporationRate(rate);
+}
+
+float ofApp::waterSimGetEvaporation() const {
+	return useComputeWaterSim ? waterSimCompute.getEvaporationRate() : waterSimFragment.getEvaporationRate();
 }
 
 bool ofApp::waterSimIsLavaMode() const {

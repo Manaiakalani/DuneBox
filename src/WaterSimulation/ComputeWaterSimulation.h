@@ -103,6 +103,9 @@ public:
     void setEvaporationRate(float rate);
     float getEvaporationRate() const { return evaporationRate; }
 
+    /// Remove all water (and lava) from the grid.
+    void clearWater();
+
     /// Check if OpenGL 4.3+ compute shaders are available
     static bool isComputeSupported();
 

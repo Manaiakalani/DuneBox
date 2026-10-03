@@ -357,8 +357,9 @@ void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
         numSteps++;
     }
 
-    // Apply water additions (rain gestures)
-    if (!pendingWaterAdds.empty()) {
+    // Apply water additions (rain gestures) and evaporation; the shader only
+    // evaporates water, so lava is left alone.
+    if (!pendingWaterAdds.empty() || (evaporationRate > 0.0f && fluidType == FLUID_WATER)) {
         dispatchWaterAdd(fixedDt);
         pendingWaterAdds.clear();
     }
@@ -581,6 +582,24 @@ void ComputeWaterSimulation::setFluidType(FluidType type) {
 
 void ComputeWaterSimulation::setLavaTemperature(float temp) {
     lavaTemperature = ofClamp(temp, 0.0f, 1.0f);
+}
+
+void ComputeWaterSimulation::clearWater() {
+    if (!initialized) return;
+    pendingWaterAdds.clear();
+    std::vector<float> zeros;
+    for (int i = 0; i < 3; i++) {
+        if (hasGlClearTexImage()) {
+            float clearColor[4] = {0, 0, 0, 0};
+            glClearTexImage(quantityTex[i], 0, GL_RGBA, GL_FLOAT, clearColor);
+        } else {
+            if (zeros.empty()) zeros.assign((size_t)simWidth * simHeight * 4, 0.0f);
+            glBindTexture(GL_TEXTURE_2D, quantityTex[i]);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, simWidth, simHeight, GL_RGBA, GL_FLOAT, zeros.data());
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+    }
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
 }
 
 void ComputeWaterSimulation::setEvaporationRate(float rate) {

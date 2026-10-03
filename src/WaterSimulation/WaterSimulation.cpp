@@ -291,8 +291,8 @@ void WaterSimulation::update(ofTexture& depthTexture, float dt) {
         numSteps++;
     }
 
-    // Step 6: Apply water additions (rain gestures)
-    if (!pendingWaterAdds.empty()) {
+    // Step 6: Apply water additions (rain gestures) and evaporation
+    if (!pendingWaterAdds.empty() || (evaporationRate > 0.0f && !lavaActive)) {
         applyWaterAdditions(fixedDt);
         applyWaterUpdate(currentQuantity);
         currentQuantity = 1 - currentQuantity;
@@ -468,6 +468,13 @@ void WaterSimulation::applyWaterAdditions(float stepSize) {
         disk.draw();
     }
 
+    // Evaporation: a negative source over the whole grid. WaterUpdate clamps
+    // depth at zero, so dry cells stay dry.
+    if (evaporationRate > 0.0f && !lavaActive) {
+        waterAddShader.setUniform1f("waterAmount", -evaporationRate);
+        quadMesh.draw();
+    }
+
     waterAddShader.end();
     ofDisableBlendMode();
     waterAddFbo.end();
@@ -586,6 +593,16 @@ void WaterSimulation::setCellSize(float cs) { cellSize = cs; }
 void WaterSimulation::setWaterOpacity(float opacity) { waterOpacity = opacity; }
 void WaterSimulation::setMaxStepsPerFrame(int steps) { maxStepsPerFrame = steps; }
 void WaterSimulation::setEnabled(bool e) { enabled = e; }
+
+void WaterSimulation::clearWater() {
+    if (!initialized) return;
+    pendingWaterAdds.clear();
+    for (int i = 0; i < 3; i++) {
+        quantityFbo[i].begin();
+        ofClear(0, 0, 0, 0);
+        quantityFbo[i].end();
+    }
+}
 
 void WaterSimulation::setLavaMode(bool enabled) {
     if (enabled == lavaActive) return;

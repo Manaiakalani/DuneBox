@@ -214,6 +214,13 @@ public:
 
 	bool isKinectConnected() const { return kinectOpened; }
 
+	// Remote calibration (dashboard via the sandcam bridge)
+	bool isROICalibrated() const { return ROIcalibrated; }
+	const std::string& getCalibrationText() const { return calibrationText; }
+	bool isAwaitingConfirmation() const { return confirmModalVisible; }
+	void remoteConfirm();  // same as pressing the confirm dialog's main button
+	void remoteCancel();
+
 	int getKinectVersion() const { return kinectVersion; }
 
 	// Debug functions
@@ -304,6 +311,7 @@ private:
     bool basePlaneUpdated;
     bool imageStabilized;
     bool waitingForFlattenSand;
+    bool confirmModalVisible = false;
     bool drawKinectView;
 	bool drawKinectColorView;
     Calibration_state calibrationState;

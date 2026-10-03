@@ -79,6 +79,13 @@ public:
     void setLavaMode(bool enabled);
     bool isLavaMode() const { return lavaActive; }
 
+    /// Water removed per second everywhere (0 = none). Not applied to lava.
+    void setEvaporationRate(float rate) { evaporationRate = std::max(0.0f, rate); }
+    float getEvaporationRate() const { return evaporationRate; }
+
+    /// Remove all water (and lava) from the grid.
+    void clearWater();
+
     void loadSettings(const std::string& path = "settings/waterSettings.xml");
     void saveSettings(const std::string& path = "settings/waterSettings.xml");
 
@@ -154,6 +161,7 @@ private:
     bool enabled;
     bool initialized;
     bool lavaActive;
+    float evaporationRate = 0.0f;
 
     // Saved base values for toggling lava mode
     float baseAttenuation;

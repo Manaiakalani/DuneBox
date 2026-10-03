@@ -1860,14 +1860,38 @@ void KinectProjector::onSliderEvent(ofxDatGuiSliderEvent e){
     }
 }
 
+void KinectProjector::remoteConfirm()
+{
+	if (!confirmModalVisible) return;
+	confirmModalVisible = false;
+	confirmModal->hide();
+	onConfirmModalEvent(ofxModalEvent(ofxModalEvent::CONFIRM, confirmModal.get()));
+}
+
+void KinectProjector::remoteCancel()
+{
+	if (confirmModalVisible) {
+		confirmModalVisible = false;
+		confirmModal->hide();
+		onConfirmModalEvent(ofxModalEvent(ofxModalEvent::CANCEL, confirmModal.get()));
+	} else if (applicationState == APPLICATION_STATE_CALIBRATING) {
+		calibModal->hide();
+		applicationState = APPLICATION_STATE_SETUP;
+		calibrationText = "Calibration cancelled";
+		updateStatusGUI();
+	}
+}
+
 void KinectProjector::onConfirmModalEvent(ofxModalEvent e)
 {
     if (e.type == ofxModalEvent::SHOWN)
 	{
+        confirmModalVisible = true;
         ofLogVerbose("KinectProjector") << "Confirm modal window is open" ;
     }  
 	else if (e.type == ofxModalEvent::HIDDEN)
 	{
+		confirmModalVisible = false;
 		if (!kinectOpened)
 		{
 			confirmModal->setMessage("Still no connection to Kinect. Please check that the kinect is (1) connected, (2) powerer and (3) not used by another application.");
