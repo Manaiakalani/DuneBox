@@ -103,7 +103,7 @@ bool ofxKinectProjectorToolkit::loadCalibration(string path){
     if (!xml.load(path)) {
         ofLogWarning("ofxKinectProjectorToolkit")
             << "loadCalibration(): no calibration file at '" << path
-            << "'. Run 'Automatically calibrate kinect & projector' in the GUI to create one.";
+            << "'. Run Calibration > '2. Calibrate projector' in the GUI to create one.";
         return false;
     }
 	auto calibration = xml.getChild("CALIBRATION");
@@ -115,7 +115,7 @@ bool ofxKinectProjectorToolkit::loadCalibration(string path){
 			<< "loadCalibration(): '" << path << "' was calibrated for projector "
 			<< sprojRes << " / kinect " << skinectRes << ", but this rig is projector "
 			<< projRes << " / kinect " << kinectRes
-			<< ". Ignoring the stale calibration - re-run 'Automatically calibrate kinect & projector'.";
+			<< ". Ignoring the stale calibration - re-run Calibration > '2. Calibrate projector'.";
 		return false;
 	}
     auto coefficients = calibration.getChild("COEFFICIENTS");

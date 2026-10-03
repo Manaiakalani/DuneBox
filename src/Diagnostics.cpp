@@ -22,7 +22,12 @@ static DiagnosticItem probeKinect(int kinectVersion, bool kinectConnected) {
         return {"Kinect", "v2 not opened - may be in use by another app", DiagnosticItem::ERR};
     }
     if (kinectVersion == 3) {
-        return {"Kinect", "Azure (v3) - unsupported in this build", DiagnosticItem::WARN};
+        return {"Kinect", "Azure (v3) - unsupported in this build; use 4 with sandcam instead", DiagnosticItem::WARN};
+    }
+    if (kinectVersion == 4) {
+        if (kinectConnected)
+            return {"Sensor", "Receiving depth from sandcam", DiagnosticItem::OK};
+        return {"Sensor", "Waiting for sandcam - turn on \"Share this sensor with DuneBox\"", DiagnosticItem::ERR};
     }
     // Kinect v1 (ofxKinect / libfreenect)
     int n = ofxKinect::numConnectedDevices();

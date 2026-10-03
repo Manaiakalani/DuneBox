@@ -38,6 +38,7 @@ General Public License for more details.
 #endif
 
 #include "Utils.h"
+#include "NetworkDepthSource.h"
 
 class KinectGrabber: public ofThread {
 public:
@@ -81,8 +82,9 @@ public:
     }
 
     // Select the depth sensor backend before calling setup(): 1 = Kinect v1
-    // (ofxKinect), 2 = Kinect v2 (ofxKinectForWindows2). v2 only takes effect
-    // when the binary is compiled with DUNEBOX_USE_KINECT_FOR_WINDOWS2.
+    // (ofxKinect), 2 = Kinect v2 (ofxKinectForWindows2), 4 = DuneBox-sandcam's
+    // depth relay (any sensor sandcam supports). v2 only takes effect when the
+    // binary is compiled with DUNEBOX_USE_KINECT_FOR_WINDOWS2.
     void setKinectVersion(int v){
         kinectVersion = v;
     }
@@ -163,6 +165,9 @@ private:
     std::shared_ptr<ofxKFW2::Source::Color> kinectV2Color;
     void updateKinectV2ColorInDepthFrame();
 #endif
+    NetworkDepthSource networkDepth;
+    float lastNetworkConnectTry = 0;
+    void updateNetworkDepth();
     unsigned int width, height; // Width and height of kinect frames
 	int minX, maxX; // , ROIwidth; // ROI definition
 	int minY, maxY; //, ROIheight;

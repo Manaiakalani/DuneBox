@@ -79,6 +79,15 @@ private:
 	bool waterSimIsLavaMode() const;
 	int  waterSimGetSimWidth() const;
 	int  waterSimGetSimHeight() const;
+	void waterSimClear();
+	void waterSimSetEvaporation(float rate);
+	float waterSimGetEvaporation() const;
+	void waterSimSetErosion(bool on);
+	bool waterSimIsErosion() const;
+
+	// Dashboard commands relayed by sandcam over the bridge
+	void handleDashboardCommand(const ofJson& msg);
+	bool handRainEnabled = true;   // rain where hands hover over the sand
 
 	ofFbo testTerrainFbo;          // Fallback terrain when no Kinect
 	bool useTestTerrain;           // True when Kinect is unavailable

@@ -324,17 +324,15 @@ void SandSurfaceRenderer::setupGui(){
     
     // instantiate the gui //
     gui2 = new ofxDatGui( ofxDatGuiAnchor::TOP_LEFT );
-    gui2->addToggle("Contour lines", drawContourLines)->setStripeColor(ofColor::blue);
-    gui2->addSlider("Lines distance", 1, 30, contourLineDistance)->setName("Contour lines distance");
-    gui2->getSlider("Contour lines distance")->setStripeColor(ofColor::blue);
-    gui2->addDropdown("Load Color Map", colorMapFilesList)->setName("Load Color Map");
-    gui2->getDropdown("Load Color Map")->setStripeColor(ofColor::yellow);
-    gui2->addHeader(":: Display ::", false);
+    gui2->addHeader("Display", false);
+    gui2->addToggle("Contour lines", drawContourLines);
+    gui2->addSlider("Contour spacing", 1, 30, contourLineDistance)->setName("Contour lines distance");
+    gui2->addDropdown("Color map", colorMapFilesList)->setName("Load Color Map");
 
     gui = new ofxDatGui( ofxDatGuiAnchor::NO_ANCHOR );
     gui->setPosition(gui2->getPosition().x, gui2->getPosition().y+gui2->getHeight()+30);
-    gui->addButton("Reset colors to color map file")->setName("Reset colors");
-    gui->addButton("Save to color map file")->setName("Save");
+    gui->addButton("Revert to saved color map")->setName("Reset colors");
+    gui->addButton("Save color map")->setName("Save");
     gui->addToggle("Edit color map", editColorMap)->setName("Edit");
 
     gui3 = new ofxDatGui( ofxDatGuiAnchor::NO_ANCHOR );

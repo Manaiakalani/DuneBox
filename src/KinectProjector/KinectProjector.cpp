@@ -106,7 +106,8 @@ void KinectProjector::setup(bool sdisplayGui)
         // Azure Kinect / Orbbec Femto Bolt pipeline is not yet implemented.
         // The update() loop relies on kinectgrabber channels (filtered/colored/gradient)
         // which are not wired for Azure. Mark as unsupported to avoid silent failures.
-        ofLogError("KinectProjector") << "Azure Kinect (kinectVersion=3) is not supported in this build; set kinectVersion=1 or 2 in settings/kinectProjectorSettings.xml";
+        ofLogError("KinectProjector") << "Azure Kinect (kinectVersion=3) is not supported in this build. "
+            "For Azure Kinect, Orbbec Femto or RealSense, set kinectVersion=4 and share the sensor from DuneBox-sandcam.";
         kinectOpened = false;
         azureUnsupported = true;
     } else {
@@ -222,63 +223,45 @@ void KinectProjector::updateStatusGUI()
 	if (!displayGui)
 		return;
 
+	auto setStatus = [this](const std::string& row, const std::string& text, const ofColor& tone) {
+		auto label = StatusGUI->getLabel(row);
+		label->setLabel(text);
+		label->setLabelColor(tone);
+	};
+	using namespace dunebox;
+
 	if (kinectOpened)
-	{
-		StatusGUI->getLabel("Kinect Status")->setLabel("Kinect running");
-		StatusGUI->getLabel("Kinect Status")->setLabelColor(ofColor(0, 255, 0));
-	}
+		setStatus("Kinect Status", "Depth camera: connected", tok::ok());
 	else
-	{
-		StatusGUI->getLabel("Kinect Status")->setLabel("Kinect not found");
-		StatusGUI->getLabel("Kinect Status")->setLabelColor(ofColor(255, 0, 0));
-	}
+		setStatus("Kinect Status", "Depth camera: not found. Check USB and power", tok::err());
 
 	if (ROIcalibrated)
-	{
-		StatusGUI->getLabel("ROI Status")->setLabel("ROI defined");
-		StatusGUI->getLabel("ROI Status")->setLabelColor(ofColor(0, 255, 0));
-	}
+		setStatus("ROI Status", "Sand region: set", tok::ok());
 	else
-	{
-		StatusGUI->getLabel("ROI Status")->setLabel("ROI not defined");
-		StatusGUI->getLabel("ROI Status")->setLabelColor(ofColor(255, 0, 0));
-	}
+		setStatus("ROI Status", "Sand region: not set. Calibration > 1", tok::warn());
 
 	if (basePlaneComputed)
-	{
-		StatusGUI->getLabel("Baseplane Status")->setLabel("Baseplane found");
-		StatusGUI->getLabel("Baseplane Status")->setLabelColor(ofColor(0, 255, 0));
-	}
+		setStatus("Baseplane Status", "Sea level: found", tok::ok());
 	else
-	{
-		StatusGUI->getLabel("Baseplane Status")->setLabel("Baseplane not found");
-		StatusGUI->getLabel("Baseplane Status")->setLabelColor(ofColor(255, 0, 0));
-	}
+		setStatus("Baseplane Status", "Sea level: not found. Flatten the sand", tok::warn());
 
 	if (projKinectCalibrated)
-	{
-		StatusGUI->getLabel("Calibration Status")->setLabel("Projector/Kinect calibrated");
-		StatusGUI->getLabel("Calibration Status")->setLabelColor(ofColor(0, 255, 0));
-	}
+		setStatus("Calibration Status", "Projector: calibrated", tok::ok());
 	else
-	{
-		StatusGUI->getLabel("Calibration Status")->setLabel("Projector/Kinect not calibrated");
-		StatusGUI->getLabel("Calibration Status")->setLabelColor(ofColor(255, 0, 0));
-	}
+		setStatus("Calibration Status", "Projector: not calibrated. Calibration > 2", tok::warn());
 
-	StatusGUI->getLabel("Projector Status")->setLabel("Projector " + ofToString(projRes.x) + " x " + ofToString(projRes.y));
+	setStatus("Projector Status",
+		"Projector output: " + ofToString(projRes.x) + " x " + ofToString(projRes.y), tok::text2());
 
-	std::string AppStatus = "Setup";
+	std::string AppStatus = "Ready to start (Space)";
 	if (applicationState == APPLICATION_STATE_CALIBRATING)
 		AppStatus = "Calibrating";
 	else if (applicationState == APPLICATION_STATE_RUNNING)
 		AppStatus = "Running";
+	setStatus("Application Status", "Sandbox: " + AppStatus, tok::text());
 
-	StatusGUI->getLabel("Application Status")->setLabel("Application state: " + AppStatus);
-	StatusGUI->getLabel("Application Status")->setLabelColor(ofColor(255, 255, 0));
-
-	StatusGUI->getLabel("Calibration Step")->setLabel("Calibration Step: " + calibrationText);;
-	StatusGUI->getLabel("Calibration Step")->setLabelColor(ofColor(0, 255, 255));
+	setStatus("Calibration Step",
+		calibrationText.empty() ? "Last step: none" : "Last step: " + calibrationText, tok::text2());
 
 	gui->getToggle("Spatial filtering")->setChecked(spatialFiltering);
 	gui->getToggle("Quick reaction")->setChecked(followBigChanges);
@@ -504,7 +487,7 @@ void KinectProjector::mouseReleased(int x, int y, int button)
 			kinectROI = tempRect;
 			setNewKinectROI();
 			ROICalibState = ROI_CALIBRATION_STATE_DONE;
-			calibrationText = "Manual ROI defined";
+			calibrationText = "Sand region drawn";
 			updateStatusGUI();
 		}
 	}
@@ -1498,45 +1481,37 @@ ofVec2f KinectProjector::gradientAtKinectCoord(float x, float y){
 
 void KinectProjector::setupGui(){
     // instantiate and position the gui //
+    // Labels are what operators read; setName keeps the event keys stable.
     gui = new ofxDatGui( ofxDatGuiAnchor::TOP_RIGHT );
-	gui->addButton("RUN!")->setName("Start Application");
+    gui->addHeader("DuneBox settings", false);
+
+	auto calibrationFolder = gui->addFolder("Calibration", dunebox::tok::borderStrong());
+	calibrationFolder->addButton("1. Draw the sand region")->setName("Manually define sand region");
+	calibrationFolder->addButton("2. Calibrate projector")->setName("Automatically calibrate kinect & projector");
+	calibrationFolder->addButton("Refit region to calibration")->setName("Auto Adjust ROI");
+	calibrationFolder->addToggle("Outline region on sand", doShowROIonProjector)->setName("Show ROI on sand");
+	calibrationFolder->expand();
+
+	gui->addButton("Start sandbox  (Space)")->setName("Start Application");
 	gui->addBreak();
-    gui->addFRM();
-	fpsKinectText = gui->addTextInput("Kinect FPS", "0");
+    gui->addFRM()->setLabel("Frame rate");
+	fpsKinectText = gui->addTextInput("Sensor rate", "0");
     gui->addBreak();
-    
-    auto advancedFolder = gui->addFolder("Advanced", ofColor::purple);
-    advancedFolder->addToggle("Display kinect depth view", drawKinectView)->setName("Draw kinect depth view");
-	advancedFolder->addToggle("Display kinect color view", drawKinectColorView)->setName("Draw kinect color view");
-	advancedFolder->addToggle("Dump Debug", DumpDebugFiles);
+
+    auto advancedFolder = gui->addFolder("Advanced", dunebox::tok::borderStrong());
+    advancedFolder->addToggle("Show depth view", drawKinectView)->setName("Draw kinect depth view");
+	advancedFolder->addToggle("Show color view", drawKinectColorView)->setName("Draw kinect color view");
 	advancedFolder->addSlider("Ceiling", -300, 300, 0);
-    advancedFolder->addToggle("Spatial filtering", spatialFiltering);
-	advancedFolder->addToggle("Inpaint outliers", doInpainting);
-	advancedFolder->addToggle("Full Frame Filtering", doFullFrameFiltering);
-	advancedFolder->addToggle("Quick reaction", followBigChanges);
-    advancedFolder->addSlider("Averaging", 1, 40, numAveragingSlots)->setPrecision(0);
 	advancedFolder->addSlider("Tilt X", -30, 30, 0);
 	advancedFolder->addSlider("Tilt Y", -30, 30, 0);
 	advancedFolder->addSlider("Vertical offset", -100, 100, 0);
 	advancedFolder->addButton("Reset sea level");
-	advancedFolder->addBreak();
-	
-	auto calibrationFolder = gui->addFolder("Calibration", ofColor::darkCyan);
-	calibrationFolder->addButton("Manually define sand region");
-	calibrationFolder->addButton("Automatically calibrate kinect & projector");
-	calibrationFolder->addButton("Auto Adjust ROI");
-	calibrationFolder->addToggle("Show ROI on sand", doShowROIonProjector);
-
-	//	advancedFolder->addButton("Draw ROI")->setName("Draw ROI");
- //   advancedFolder->addButton("Calibrate")->setName("Full Calibration");
-//	advancedFolder->addButton("Update ROI from calibration");
-//    gui->addButton("Automatically detect sand region");
-//    calibrationFolder->addButton("Manually define sand region");
-//    gui->addButton("Automatically calibrate kinect & projector");
-//    calibrationFolder->addButton("Manually calibrate kinect & projector");
-    
-//    gui->addBreak();
-    gui->addHeader(":: Settings ::", false);
+    advancedFolder->addToggle("Smooth depth", spatialFiltering)->setName("Spatial filtering");
+	advancedFolder->addToggle("Fill depth holes", doInpainting)->setName("Inpaint outliers");
+	advancedFolder->addToggle("Filter full frame", doFullFrameFiltering)->setName("Full Frame Filtering");
+	advancedFolder->addToggle("React fast to big changes", followBigChanges)->setName("Quick reaction");
+    advancedFolder->addSlider("Averaging", 1, 40, numAveragingSlots)->setPrecision(0);
+	advancedFolder->addToggle("Write debug files", DumpDebugFiles)->setName("Dump Debug");
     
     // once the gui has been assembled, register callbacks to listen for component specific events //
     gui->onButtonEvent(this, &KinectProjector::onButtonEvent);
@@ -1547,6 +1522,7 @@ void KinectProjector::setupGui(){
 	gui->setAutoDraw(false);
 
 	StatusGUI = new ofxDatGui(ofxDatGuiAnchor::BOTTOM_LEFT);
+	StatusGUI->addHeader("Status", false);
 	StatusGUI->addLabel("Application Status");
 	StatusGUI->addLabel("Kinect Status");
 	StatusGUI->addLabel("ROI Status");
@@ -1554,7 +1530,6 @@ void KinectProjector::setupGui(){
 	StatusGUI->addLabel("Calibration Status");
 	StatusGUI->addLabel("Calibration Step");
 	StatusGUI->addLabel("Projector Status");
-	StatusGUI->addHeader(":: Status ::", false);
 	StatusGUI->setAutoDraw(false);
 }
 
@@ -1607,8 +1582,8 @@ void KinectProjector::startApplication()
 		}
 		else 
 		{
-			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): kinect ROI / base-plane settings missing (settings/kinectProjectorSettings.xml). Open the GUI 'Calibration' folder and run 'Manually define sand region'.";
-			calibrationText = "ROI not set - run 'Manually define sand region' in the GUI";
+			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): kinect ROI / base-plane settings missing (settings/kinectProjectorSettings.xml). Run Calibration > '1. Draw the sand region' in the GUI.";
+			calibrationText = "Sand region missing. Run Calibration > 1. Draw the sand region";
 			updateStatusGUI();
 			return;
 		}
@@ -1631,8 +1606,8 @@ void KinectProjector::startApplication()
 		{
 			// ROI is already loaded above, so the projector auto-calibration is
 			// now runnable from the GUI 'Calibration' folder.
-			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): projector/kinect calibration missing or incompatible (settings/calibration.xml). Open the GUI 'Calibration' folder and run 'Automatically calibrate kinect & projector'.";
-			calibrationText = "Not calibrated - run 'Automatically calibrate kinect & projector'";
+			ofLogWarning("KinectProjector") << "KinectProjector.startApplication(): projector/kinect calibration missing or incompatible (settings/calibration.xml). Run Calibration > '2. Calibrate projector' in the GUI.";
+			calibrationText = "Projector not calibrated. Run Calibration > 2. Calibrate projector";
 			updateStatusGUI();
 			return;
 		}
@@ -1710,7 +1685,7 @@ void KinectProjector::startAutomaticKinectProjectorCalibration(){
 		return;
 	}
 
-	calibrationText = "Starting projector/kinect calibration";
+	calibrationText = "Calibrating projector";
 
 	applicationState = APPLICATION_STATE_CALIBRATING;
 	kinectgrabber.setNeedColorFrame(true);
@@ -1886,14 +1861,38 @@ void KinectProjector::onSliderEvent(ofxDatGuiSliderEvent e){
     }
 }
 
+void KinectProjector::remoteConfirm()
+{
+	if (!confirmModalVisible) return;
+	confirmModalVisible = false;
+	confirmModal->hide();
+	onConfirmModalEvent(ofxModalEvent(ofxModalEvent::CONFIRM, confirmModal.get()));
+}
+
+void KinectProjector::remoteCancel()
+{
+	if (confirmModalVisible) {
+		confirmModalVisible = false;
+		confirmModal->hide();
+		onConfirmModalEvent(ofxModalEvent(ofxModalEvent::CANCEL, confirmModal.get()));
+	} else if (applicationState == APPLICATION_STATE_CALIBRATING) {
+		calibModal->hide();
+		applicationState = APPLICATION_STATE_SETUP;
+		calibrationText = "Calibration cancelled";
+		updateStatusGUI();
+	}
+}
+
 void KinectProjector::onConfirmModalEvent(ofxModalEvent e)
 {
     if (e.type == ofxModalEvent::SHOWN)
 	{
+        confirmModalVisible = true;
         ofLogVerbose("KinectProjector") << "Confirm modal window is open" ;
     }  
 	else if (e.type == ofxModalEvent::HIDDEN)
 	{
+		confirmModalVisible = false;
 		if (!kinectOpened)
 		{
 			confirmModal->setMessage("Still no connection to Kinect. Please check that the kinect is (1) connected, (2) powerer and (3) not used by another application.");

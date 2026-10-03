@@ -819,17 +819,6 @@ void CBoidGameController::drawMotherRabbit()
 void CBoidGameController::setupGui() {
 	// instantiate and position the gui //
 	gui = new ofxDatGui();
-	//	auto animalGame = gui->addFolder("Animal Game", ofColor::greenYellow);
-
-	//animalGame->addSlider("# of fish", 0, 10, fish.size())->setPrecision(0);
-	//animalGame->addSlider("# of rabbits", 0, 10, rabbits.size())->setPrecision(0);
-	//animalGame->addToggle("Mother fish", showMotherFish);
-	//animalGame->addToggle("Mother rabbit", showMotherRabbit);
-	//animalGame->addButton("Remove all animals");
-
-//	gui->addButton("Start Sandimal game");
-//	gui->addButton("Start Seek Mother game");
-
 	gui->addSlider("# of fish", 0, 200, fish.size())->setPrecision(0);
 	gui->addSlider("# of rabbits", 0, 50, rabbits.size())->setPrecision(0);
 	gui->addSlider("# of sharks", 0, 10, sharks.size())->setPrecision(0);
@@ -838,17 +827,14 @@ void CBoidGameController::setupGui() {
 	gui->addToggle("Draw flipped", doFlippedDrawing);
 	gui->addButton("Remove all animals");
 
-	gui->addHeader(":: Games ::", false);
+	gui->addHeader("Animals", false);
 
 	gui->onButtonEvent(this, &CBoidGameController::onButtonEvent);
 	gui->onToggleEvent(this, &CBoidGameController::onToggleEvent);
 	gui->onSliderEvent(this, &CBoidGameController::onSliderEvent);
-	gui->setLabelAlignment(ofxDatGuiAlignment::CENTER);
 
 	gui->setPosition(ofxDatGuiAnchor::BOTTOM_RIGHT); // You have to do it at the end
 	gui->setAutoDraw(false); // troubles with multiple windows drawings on Windows
-
-//	std::cout << "GUI size " << gui->getWidth() << " x " << gui->getHeight() << std::endl;
 }
 
 void CBoidGameController::UpdateGUI()
