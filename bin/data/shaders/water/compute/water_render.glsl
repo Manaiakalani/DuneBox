@@ -8,12 +8,19 @@ layout(local_size_x = 16, local_size_y = 16) in;
 layout(rgba32f, binding = 0) uniform image2D quantityImg;
 layout(rgba32f, binding = 1) uniform image2D bathymetryImg;
 layout(rgba8,   binding = 2) uniform image2D outputImg;
+layout(rgba32f, binding = 3) uniform image2D sedimentImg;
 
 uniform ivec2 gridSize;
 uniform float waterOpacity;
 uniform float time;
 uniform int   fluidType; // 0 = water, 1 = lava
 uniform float lavaTemp;  // 0.0 (cooled) to 1.0 (hot) — affects lava color
+uniform int   erosion;
+uniform float erosionGain;
+
+const vec3 SCAR_COLOR = vec3(0.30, 0.17, 0.08);
+const vec3 DEPOSIT_COLOR = vec3(0.96, 0.86, 0.62);
+const vec3 MUD_COLOR = vec3(0.45, 0.33, 0.18);
 
 void main() {
     ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
@@ -30,8 +37,13 @@ void main() {
 
     float waterDepth = max(q.x - b, 0.0);
 
+    vec2 sediment = erosion == 1 ? imageLoad(sedimentImg, gid).rg : vec2(0.0);
+
     if (waterDepth < 0.001) {
-        imageStore(outputImg, gid, vec4(0.0));
+        float mark = clamp(abs(sediment.r) * erosionGain, 0.0, 0.7);
+        vec4 dry = mark < 0.03 ? vec4(0.0)
+                 : vec4(sediment.r < 0.0 ? SCAR_COLOR : DEPOSIT_COLOR, mark);
+        imageStore(outputImg, gid, dry);
         return;
     }
 
@@ -53,7 +65,8 @@ void main() {
 
     if (fluidType == 0) {
         // Water: deep blue with depth-based opacity
-        vec3 waterColor = vec3(0.1, 0.3, 0.7);
+        vec3 waterColor = mix(vec3(0.1, 0.3, 0.7), MUD_COLOR,
+                              clamp(sediment.g * erosionGain, 0.0, 0.75));
         float alpha = clamp(waterDepth * waterOpacity, 0.0, 0.85);
         result = vec4(waterColor + vec3(spec * 0.4), alpha);
     } else {

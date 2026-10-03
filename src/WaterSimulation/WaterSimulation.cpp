@@ -20,6 +20,7 @@ This file is part of DuneBox, a fork of Magic Sand.
 ***********************************************************************/
 
 #include "WaterSimulation.h"
+#include "ErosionParams.h"
 #include "ofXml.h"
 
 static const string SHADER_PATH = "shaders/water/adapted/";
@@ -70,6 +71,9 @@ void WaterSimulation::setup(int width, int height) {
     waterAddShader.load(SHADER_PATH + "WaterAdd", SHADER_PATH + "WaterAdd");
     waterUpdateShader.load(vp, SHADER_PATH + "WaterUpdate");
     waterRenderShader.load(SHADER_PATH + "WaterRender", SHADER_PATH + "WaterRender");
+    if (!erosionShader.load(vp, SHADER_PATH + "Erosion")) {
+        ofLogWarning("WaterSimulation") << "Erosion shader failed to load - erosion view unavailable";
+    }
 
     // Verify all shaders loaded
     bool allLoaded = bathymetryUpdateShader.isLoaded()
@@ -170,6 +174,12 @@ void WaterSimulation::setup(int width, int height) {
     waterRenderFbo.begin();
     ofClear(0, 0, 0, 0);
     waterRenderFbo.end();
+
+    for (int i = 0; i < 2; i++) {
+        sedimentFbo[i].allocate(qSettings);
+    }
+    currentSediment = 0;
+    clearErosion();
 
     // --- Build fullscreen quad mesh ---
     quadMesh.clear();
@@ -291,19 +301,28 @@ void WaterSimulation::update(ofTexture& depthTexture, float dt) {
         numSteps++;
     }
 
-    // Step 6: Apply water additions (rain gestures)
-    if (!pendingWaterAdds.empty()) {
+    // Step 6: Apply water additions (rain gestures) and evaporation
+    if (!pendingWaterAdds.empty() || (evaporationRate > 0.0f && !lavaActive)) {
         applyWaterAdditions(fixedDt);
         applyWaterUpdate(currentQuantity);
         currentQuantity = 1 - currentQuantity;
         pendingWaterAdds.clear();
     }
 
-    // Step 7: Render water overlay
+    // Step 7: Carry sediment with the flow
+    bool showErosion = erosionEnabled && !lavaActive && erosionShader.isLoaded();
+    if (showErosion) {
+        applyErosion(dt);
+    }
+
+    // Step 8: Render water overlay
     waterRenderFbo.begin();
     ofClear(0, 0, 0, 0);
 
     waterRenderShader.begin();
+    waterRenderShader.setUniformTexture("sedimentSampler", sedimentFbo[currentSediment].getTexture(), 2);
+    waterRenderShader.setUniform1i("uErosion", showErosion ? 1 : 0);
+    waterRenderShader.setUniform1f("erosionGain", ErosionParams::displayGain);
     waterRenderShader.setUniformTexture("quantitySampler", quantityFbo[currentQuantity].getTexture(), 0);
     waterRenderShader.setUniformTexture("bathymetrySampler", bathymetryFbo[currentBathymetry].getTexture(), 1);
     waterRenderShader.setUniform2f("texelSize", 1.0f / simWidth, 1.0f / simHeight);
@@ -468,6 +487,13 @@ void WaterSimulation::applyWaterAdditions(float stepSize) {
         disk.draw();
     }
 
+    // Evaporation: a negative source over the whole grid. WaterUpdate clamps
+    // depth at zero, so dry cells stay dry.
+    if (evaporationRate > 0.0f && !lavaActive) {
+        waterAddShader.setUniform1f("waterAmount", -evaporationRate);
+        quadMesh.draw();
+    }
+
     waterAddShader.end();
     ofDisableBlendMode();
     waterAddFbo.end();
@@ -490,6 +516,30 @@ void WaterSimulation::applyWaterUpdate(int quantityIndex) {
     waterUpdateShader.end();
 
     quantityFbo[targetIndex].end();
+}
+
+void WaterSimulation::applyErosion(float dt) {
+    int target = 1 - currentSediment;
+
+    sedimentFbo[target].begin();
+    erosionShader.begin();
+    erosionShader.setUniformTexture("quantitySampler", quantityFbo[currentQuantity].getTexture(), 0);
+    erosionShader.setUniformTexture("bathymetrySampler", bathymetryFbo[currentBathymetry].getTexture(), 1);
+    erosionShader.setUniformTexture("oldBathymetrySampler", bathymetryFbo[1 - currentBathymetry].getTexture(), 2);
+    erosionShader.setUniformTexture("sedimentSampler", sedimentFbo[currentSediment].getTexture(), 3);
+    erosionShader.setUniform1f("dt", std::min(dt, 0.1f));
+    erosionShader.setUniform1f("cellSize", cellSize);
+    erosionShader.setUniform1f("capacity", ErosionParams::capacity);
+    erosionShader.setUniform1f("erodeRate", ErosionParams::erodeRate);
+    erosionShader.setUniform1f("depositRate", ErosionParams::depositRate);
+    erosionShader.setUniform1f("fade", ErosionParams::fade);
+    erosionShader.setUniform1f("resetDelta", ErosionParams::resetDelta);
+    erosionShader.setUniform1f("maxBed", ErosionParams::maxBed);
+    drawFullscreenQuad();
+    erosionShader.end();
+    sedimentFbo[target].end();
+
+    currentSediment = target;
 }
 
 // --- Draw -----------------------------------------------------------
@@ -586,6 +636,30 @@ void WaterSimulation::setCellSize(float cs) { cellSize = cs; }
 void WaterSimulation::setWaterOpacity(float opacity) { waterOpacity = opacity; }
 void WaterSimulation::setMaxStepsPerFrame(int steps) { maxStepsPerFrame = steps; }
 void WaterSimulation::setEnabled(bool e) { enabled = e; }
+
+void WaterSimulation::clearWater() {
+    if (!initialized) return;
+    pendingWaterAdds.clear();
+    for (int i = 0; i < 3; i++) {
+        quantityFbo[i].begin();
+        ofClear(0, 0, 0, 0);
+        quantityFbo[i].end();
+    }
+}
+
+void WaterSimulation::setErosionEnabled(bool on) {
+    if (on && !erosionEnabled) clearErosion();
+    erosionEnabled = on;
+}
+
+void WaterSimulation::clearErosion() {
+    for (int i = 0; i < 2; i++) {
+        if (!sedimentFbo[i].isAllocated()) continue;
+        sedimentFbo[i].begin();
+        ofClear(0, 0, 0, 0);
+        sedimentFbo[i].end();
+    }
+}
 
 void WaterSimulation::setLavaMode(bool enabled) {
     if (enabled == lavaActive) return;

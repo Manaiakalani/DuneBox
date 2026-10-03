@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "KinectV2Handler.h"
 #include "AzureKinectHandler.h"
 #include "ofxModal.h"
+#include "../DuneBoxGuiTheme.h"
 
 #include "KinectProjectorCalibration.h"
 #include "Utils.h"
@@ -46,9 +47,35 @@ class ofxModalThemeProjKinect : public ofxModalTheme {
 public:
     ofxModalThemeProjKinect()
     {
+        using namespace dunebox;
         animation.speed = 0.1f;
-        fonts.title = ofxSmartFont::add("ofxbraitsch/fonts/HelveticaNeueLTStd-Md.otf", 20, "modal-title");
-        fonts.message = ofxSmartFont::add("ofxbraitsch/fonts/Roboto-Regular.ttf", 16, "modal-message");
+        fonts.title = ofxSmartFont::add("fonts/Geist-Medium.ttf", 18, "modal-title");
+        fonts.message = ofxSmartFont::add("fonts/Geist-Medium.ttf", 14, "modal-message");
+
+        color.modal.header = tok::surface();
+        color.modal.body = tok::surface();
+        color.modal.footer = tok::surface();
+        color.modal.hrule = tok::border();
+        color.text.title = tok::text();
+        color.text.body = tok::text2();
+        color.window.background = tok::bg();
+
+        auto& secondary = color.button.wireframe;
+        secondary.label = secondary.labelOnMouseOver = secondary.labelOnMouseDown = tok::text();
+        secondary.background = tok::surface2();
+        secondary.backgroundOnMouseOver = tok::surface3();
+        secondary.backgroundOnMouseDown = tok::surface2();
+        secondary.border = tok::borderStrong();
+
+        auto& primary = color.button.darkblue;
+        primary.label = primary.labelOnMouseOver = primary.labelOnMouseDown = tok::bg();
+        primary.background = tok::text();
+        primary.backgroundOnMouseOver = ofColor::fromHex(0xCFCFCF);
+        primary.backgroundOnMouseDown = tok::text2();
+        primary.border = tok::text();
+
+        layout.button.height = 44;
+        layout.button.width = 140;
     }
 };
 
@@ -187,6 +214,13 @@ public:
 
 	bool isKinectConnected() const { return kinectOpened; }
 
+	// Remote calibration (dashboard via the sandcam bridge)
+	bool isROICalibrated() const { return ROIcalibrated; }
+	const std::string& getCalibrationText() const { return calibrationText; }
+	bool isAwaitingConfirmation() const { return confirmModalVisible; }
+	void remoteConfirm();  // same as pressing the confirm dialog's main button
+	void remoteCancel();
+
 	int getKinectVersion() const { return kinectVersion; }
 
 	// Debug functions
@@ -277,6 +311,7 @@ private:
     bool basePlaneUpdated;
     bool imageStabilized;
     bool waitingForFlattenSand;
+    bool confirmModalVisible = false;
     bool drawKinectView;
 	bool drawKinectColorView;
     Calibration_state calibrationState;
@@ -300,7 +335,8 @@ private:
     // kinectVersion: 1 = Kinect V1 (default, ofxKinect)
     //               2 = Kinect V2 (ofxKinectV2, requires DUNEBOX_USE_KINECT_V2)
     //               3 = Azure Kinect / Orbbec Femto Bolt (NOT YET SUPPORTED)
-    int                         kinectVersion;  // 1, 2, or 3
+    //               4 = depth relayed by DuneBox-sandcam (Orbbec, RealSense, ...)
+    int                         kinectVersion;  // 1, 2, 3 or 4
     bool                        azureUnsupported;  // true if kinectVersion==3 (unsupported)
     KinectV2Handler             kinectV2;
     AzureKinectHandler          azureKinect;

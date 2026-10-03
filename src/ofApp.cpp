@@ -20,7 +20,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ***********************************************************************/
 
 #include "ofApp.h"
+#include "DuneBoxGuiTheme.h"
 #include <algorithm>
+#include <cmath>
+#include <map>
 #include <vector>
 
 ofApp::~ofApp() = default;
@@ -35,6 +38,8 @@ void ofApp::setup() {
 	ofSetLogLevel("ofFbo", OF_LOG_ERROR);
 	ofSetLogLevel("ofShader", OF_LOG_ERROR);
 	ofSetLogLevel("ofxKinect", OF_LOG_WARNING);
+
+	dunebox::GuiTheme::install();
 
 	// Setup kinectProjector
 	kinectProjector = std::make_shared<KinectProjector>(projWindow);
@@ -133,6 +138,8 @@ void ofApp::update() {
 				else waterSimFragment.setEnabled(on);
 				ofLogNotice("Bridge") << "Water simulation: " << (on ? "ON" : "OFF");
 			}
+		} else if (type == "command") {
+			handleDashboardCommand(msg);
 		} else if (type == "pong") {
 			ofLogVerbose("Bridge") << "Pong received";
 		} else if (type == "volcano_eruption") {
@@ -157,14 +164,36 @@ void ofApp::update() {
 		}
 	}
 
-	// Send water status every 60 frames
+	// Report state for the sandcam web dashboard twice a second
 	bridgeFrameCounter++;
-	if (bridgeFrameCounter >= 60) {
+	if (bridgeFrameCounter >= 30) {
 		bridgeFrameCounter = 0;
 		if (bridge.isConnected()) {
+			std::string appState = "idle";
+			switch (kinectProjector->GetApplicationState()) {
+				case KinectProjector::APPLICATION_STATE_SETUP: appState = "setup"; break;
+				case KinectProjector::APPLICATION_STATE_CALIBRATING: appState = "calibrating"; break;
+				case KinectProjector::APPLICATION_STATE_RUNNING: appState = "running"; break;
+				default: break;
+			}
 			ofJson status;
-			status["enabled"] = waterSimIsEnabled();
-			bridge.send("water_status", status);
+			status["app_state"] = appState;
+			status["kinect_connected"] = kinectProjector->isKinectConnected();
+			status["kinect_version"] = kinectProjector->getKinectVersion();
+			status["water"] = waterSimIsEnabled();
+			status["lava"] = waterSimIsLavaMode();
+			status["theme"] = sandSurfaceRenderer->getThemeName();
+			status["day_night"] = sandSurfaceRenderer->isDayNightEnabled();
+			status["fps"] = std::round(ofGetFrameRate() * 10.0f) / 10.0f;
+			float evap = waterSimGetEvaporation();
+			status["evaporation"] = evap <= 0.0f ? "off" : (evap < 0.08f ? "slow" : "fast");
+			status["hand_rain"] = handRainEnabled;
+			status["erosion"] = waterSimIsErosion();
+			status["roi_calibrated"] = kinectProjector->isROICalibrated();
+			status["projector_calibrated"] = kinectProjector->isCalibrated();
+			status["calibration_text"] = kinectProjector->getCalibrationText();
+			status["awaiting_confirm"] = kinectProjector->isAwaitingConfirmation();
+			bridge.send("dunebox_state", status);
 		}
 	}
 
@@ -203,7 +232,7 @@ void ofApp::update() {
 		}
 
 		// Rain gesture detection
-		detectRainGesture();
+		if (handRainEnabled) detectRainGesture();
 	}
 }
 
@@ -230,15 +259,14 @@ void ofApp::draw()
 		// running screen. Shown only in SETUP (not while CALIBRATING, which has
 		// its own modal prompts).
 		std::string hint =
-			"DuneBox - SETUP (not yet calibrated)\n"
-			"The sand topography appears here once calibration is loaded.\n"
+			"DuneBox is in setup\n"
+			"The sand map appears here once calibration is loaded.\n"
 			"\n"
-			"Press SPACE to start. If it stays in SETUP, the projector is not\n"
-			"calibrated for this rig yet. Open the GUI 'Calibration' folder:\n"
-			"  1) flatten the sand,\n"
-			"  2) click 'Automatically calibrate kinect & projector',\n"
-			"  3) press SPACE again. (If ROI Status is not OK, first click\n"
-			"     'Manually define sand region'.) Watch the Status panel.";
+			"Press Space to start. If it stays in setup, calibrate this rig\n"
+			"from the Calibration panel on the right:\n"
+			"  1) Draw the sand region (skip if Sand region says set),\n"
+			"  2) flatten the sand, then Calibrate projector,\n"
+			"  3) press Space again. The Status panel shows what's missing.";
 		int hx = ofGetWidth() / 2 - 240;
 		int hy = ofGetHeight() / 2 - 60;
 		// Dark backing box so the white text is readable over any color feed.
@@ -509,6 +537,61 @@ void ofApp::keyPressed(int key)
 		volcanoSourceY = cy;
 		ofLogNotice("ofApp") << "Volcano eruption triggered at center";
 	}
+	else if (key == 'x')
+	{
+		waterSimClear();
+		ofLogNotice("ofApp") << "Water cleared";
+	}
+	else if (key == 'e')
+	{
+		bool on = !waterSimIsErosion();
+		waterSimSetErosion(on);
+		if (on && !waterSimIsEnabled()) waterSimToggleEnabled();
+		themeDisplayName = on ? "Erosion: on" : "Erosion: off";
+		themeDisplayTimer = 2.0f;
+		ofLogNotice("ofApp") << "Erosion view: " << (on ? "ON" : "OFF");
+	}
+}
+
+void ofApp::handleDashboardCommand(const ofJson& msg)
+{
+	// Commands that already have a key map to it, so keyboard and dashboard
+	// behave identically.
+	static const std::map<std::string, int> commandKeys = {
+		{"toggle_water", 'w'},
+		{"toggle_lava", 'l'},
+		{"erupt_volcano", 'v'},
+		{"cycle_theme", 't'},
+		{"toggle_day_night", 'n'},
+		{"start_app", ' '},
+		{"dry_water", 'x'},
+		{"toggle_erosion", 'e'},
+	};
+	const std::string action = msg.value("action", "");
+	ofLogNotice("Bridge") << "Dashboard command: " << action;
+
+	auto it = commandKeys.find(action);
+	if (it != commandKeys.end()) {
+		keyPressed(it->second);
+	} else if (action == "set_evaporation") {
+		const std::string level = (msg.contains("value") && msg["value"].is_string())
+			? msg["value"].get<std::string>() : "off";
+		waterSimSetEvaporation(level == "fast" ? 0.12f : level == "slow" ? 0.03f : 0.0f);
+	} else if (action == "toggle_hand_rain") {
+		handRainEnabled = !handRainEnabled;
+	} else if (action == "detect_sand_region") {
+		kinectProjector->startAutomaticROIDetection();
+	} else if (action == "calibrate_projector") {
+		kinectProjector->startAutomaticKinectProjectorCalibration();
+	} else if (action == "full_calibration") {
+		kinectProjector->startFullCalibration();
+	} else if (action == "calibration_confirm") {
+		kinectProjector->remoteConfirm();
+	} else if (action == "calibration_cancel") {
+		kinectProjector->remoteCancel();
+	} else {
+		ofLogWarning("Bridge") << "Unknown dashboard command: " << action;
+	}
 }
 
 void ofApp::keyReleased(int key) {
@@ -738,6 +821,29 @@ void ofApp::waterSimSetLavaMode(bool enabled) {
 	} else {
 		waterSimFragment.setLavaMode(enabled);
 	}
+}
+
+void ofApp::waterSimClear() {
+	if (useComputeWaterSim) waterSimCompute.clearWater();
+	else waterSimFragment.clearWater();
+}
+
+void ofApp::waterSimSetEvaporation(float rate) {
+	if (useComputeWaterSim) waterSimCompute.setEvaporationRate(rate);
+	else waterSimFragment.setEvaporationRate(rate);
+}
+
+void ofApp::waterSimSetErosion(bool on) {
+	if (useComputeWaterSim) waterSimCompute.setErosionEnabled(on);
+	else waterSimFragment.setErosionEnabled(on);
+}
+
+bool ofApp::waterSimIsErosion() const {
+	return useComputeWaterSim ? waterSimCompute.isErosionEnabled() : waterSimFragment.isErosionEnabled();
+}
+
+float ofApp::waterSimGetEvaporation() const {
+	return useComputeWaterSim ? waterSimCompute.getEvaporationRate() : waterSimFragment.getEvaporationRate();
 }
 
 bool ofApp::waterSimIsLavaMode() const {

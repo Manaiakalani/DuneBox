@@ -103,6 +103,15 @@ public:
     void setEvaporationRate(float rate);
     float getEvaporationRate() const { return evaporationRate; }
 
+    /// Remove all water (and lava) from the grid.
+    void clearWater();
+
+    /// Show where flowing water would carve the sand and where sediment
+    /// would settle. Drawn only; the real sand is untouched. Water only.
+    void setErosionEnabled(bool on);
+    bool isErosionEnabled() const { return erosionEnabled; }
+    void clearErosion();
+
     /// Check if OpenGL 4.3+ compute shaders are available
     static bool isComputeSupported();
 
@@ -113,6 +122,7 @@ private:
     void dispatchBoundary();
     void dispatchWaterAdd(float stepSize);
     void dispatchWaterRender();
+    void dispatchErosion(float dt);
 
     /// Load a compute shader from a .glsl file
     GLuint loadComputeShader(const std::string& path);
@@ -133,12 +143,18 @@ private:
     // Rendered output (RGBA8)
     GLuint outputTex;
 
+    // Erosion layer: R = bed change, G = suspended sediment. Ping-pong.
+    GLuint sedimentTex[2] = {0, 0};
+    int currentSediment = 0;
+    bool erosionEnabled = false;
+
     // --- Compute shader programs ---
     GLuint bathymetryUpdateProgram;
     GLuint waterStepProgram;
     GLuint boundaryProgram;
     GLuint waterAddProgram;
     GLuint waterRenderProgram;
+    GLuint erosionProgram = 0;
 
     // --- ofTexture wrappers (for getOutputTexture() etc.) ---
     ofTexture quantityOfTex;
