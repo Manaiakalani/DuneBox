@@ -188,6 +188,7 @@ void ofApp::update() {
 			float evap = waterSimGetEvaporation();
 			status["evaporation"] = evap <= 0.0f ? "off" : (evap < 0.08f ? "slow" : "fast");
 			status["hand_rain"] = handRainEnabled;
+			status["erosion"] = waterSimIsErosion();
 			status["roi_calibrated"] = kinectProjector->isROICalibrated();
 			status["projector_calibrated"] = kinectProjector->isCalibrated();
 			status["calibration_text"] = kinectProjector->getCalibrationText();
@@ -541,6 +542,15 @@ void ofApp::keyPressed(int key)
 		waterSimClear();
 		ofLogNotice("ofApp") << "Water cleared";
 	}
+	else if (key == 'e')
+	{
+		bool on = !waterSimIsErosion();
+		waterSimSetErosion(on);
+		if (on && !waterSimIsEnabled()) waterSimToggleEnabled();
+		themeDisplayName = on ? "Erosion: on" : "Erosion: off";
+		themeDisplayTimer = 2.0f;
+		ofLogNotice("ofApp") << "Erosion view: " << (on ? "ON" : "OFF");
+	}
 }
 
 void ofApp::handleDashboardCommand(const ofJson& msg)
@@ -555,6 +565,7 @@ void ofApp::handleDashboardCommand(const ofJson& msg)
 		{"toggle_day_night", 'n'},
 		{"start_app", ' '},
 		{"dry_water", 'x'},
+		{"toggle_erosion", 'e'},
 	};
 	const std::string action = msg.value("action", "");
 	ofLogNotice("Bridge") << "Dashboard command: " << action;
@@ -820,6 +831,15 @@ void ofApp::waterSimClear() {
 void ofApp::waterSimSetEvaporation(float rate) {
 	if (useComputeWaterSim) waterSimCompute.setEvaporationRate(rate);
 	else waterSimFragment.setEvaporationRate(rate);
+}
+
+void ofApp::waterSimSetErosion(bool on) {
+	if (useComputeWaterSim) waterSimCompute.setErosionEnabled(on);
+	else waterSimFragment.setErosionEnabled(on);
+}
+
+bool ofApp::waterSimIsErosion() const {
+	return useComputeWaterSim ? waterSimCompute.isErosionEnabled() : waterSimFragment.isErosionEnabled();
 }
 
 float ofApp::waterSimGetEvaporation() const {

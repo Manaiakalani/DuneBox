@@ -11,13 +11,27 @@ uniform vec2 texelSize;
 uniform float waterOpacity;
 uniform float time;
 uniform int uLavaMode;
+uniform sampler2D sedimentSampler;
+uniform int uErosion;
+uniform float erosionGain;
 
 in vec2 vTexCoord;
 in float waterDepth;
 out vec4 fragColor;
 
+const vec3 SCAR_COLOR = vec3(0.30, 0.17, 0.08);
+const vec3 DEPOSIT_COLOR = vec3(0.96, 0.86, 0.62);
+const vec3 MUD_COLOR = vec3(0.45, 0.33, 0.18);
+
 void main() {
-    if (waterDepth < 0.001) discard;
+    vec2 sediment = uErosion == 1 ? texture(sedimentSampler, vTexCoord).rg : vec2(0.0);
+
+    if (waterDepth < 0.001) {
+        float mark = clamp(abs(sediment.r) * erosionGain, 0.0, 0.7);
+        if (mark < 0.03) discard;
+        fragColor = vec4(sediment.r < 0.0 ? SCAR_COLOR : DEPOSIT_COLOR, mark);
+        return;
+    }
 
     // Compute simple normal from water surface height differences
     float wL = texture(quantitySampler, vTexCoord + vec2(-texelSize.x, 0.0)).r;
@@ -69,7 +83,8 @@ void main() {
         fragColor = vec4(lavaColor + vec3(lavaSpec), alpha);
     } else {
         // Water color: deep blue with depth-based opacity
-        vec3 waterColor = vec3(0.1, 0.3, 0.7);
+        vec3 waterColor = mix(vec3(0.1, 0.3, 0.7), MUD_COLOR,
+                              clamp(sediment.g * erosionGain, 0.0, 0.75));
         float alpha = clamp(waterDepth * waterOpacity, 0.0, 0.85);
 
         fragColor = vec4(waterColor + vec3(spec * 0.4), alpha);

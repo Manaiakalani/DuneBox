@@ -19,6 +19,7 @@ This file is part of DuneBox, a fork of Magic Sand.
 ***********************************************************************/
 
 #include "ComputeWaterSimulation.h"
+#include "ErosionParams.h"
 #include "ofXml.h"
 #include <fstream>
 #include <sstream>
@@ -72,6 +73,10 @@ ComputeWaterSimulation::~ComputeWaterSimulation() {
     for (int i = 0; i < 2; i++) {
         if (bathymetryTex[i]) glDeleteTextures(1, &bathymetryTex[i]);
     }
+    for (int i = 0; i < 2; i++) {
+        if (sedimentTex[i]) glDeleteTextures(1, &sedimentTex[i]);
+    }
+    if (erosionProgram) glDeleteProgram(erosionProgram);
     if (bathymetryUpdateProgram) glDeleteProgram(bathymetryUpdateProgram);
     if (waterStepProgram) glDeleteProgram(waterStepProgram);
     if (boundaryProgram) glDeleteProgram(boundaryProgram);
@@ -216,6 +221,16 @@ void ComputeWaterSimulation::setup(int width, int height) {
     }
     derivativeTex = allocateTexture(simWidth, simHeight, GL_RGBA32F);
     outputTex     = allocateTexture(simWidth, simHeight, GL_RGBA8);
+    for (int i = 0; i < 2; i++) {
+        sedimentTex[i] = allocateTexture(simWidth, simHeight, GL_RGBA32F);
+    }
+    currentSediment = 0;
+
+    // Optional: water still works if this one fails to compile.
+    erosionProgram = loadComputeShader(COMPUTE_SHADER_PATH + "erosion.glsl");
+    if (!erosionProgram) {
+        ofLogWarning("ComputeWaterSimulation") << "Erosion shader failed to load - erosion view unavailable";
+    }
 
     // --- Wrap in ofTexture for getOutputTexture() etc. ---
     // We set the texture ID without taking ownership (ofTexture won't delete it)
@@ -369,8 +384,38 @@ void ComputeWaterSimulation::update(ofTexture& depthTexture, float dt) {
         lavaTemperature = max(0.0f, lavaTemperature - 0.001f * dt);
     }
 
+    if (erosionEnabled && erosionProgram && fluidType == FLUID_WATER) {
+        dispatchErosion(dt);
+    }
+
     // Render water overlay
     dispatchWaterRender();
+}
+
+void ComputeWaterSimulation::dispatchErosion(float dt) {
+    int target = 1 - currentSediment;
+
+    glUseProgram(erosionProgram);
+    glUniform2i(glGetUniformLocation(erosionProgram, "gridSize"), simWidth, simHeight);
+    glUniform1f(glGetUniformLocation(erosionProgram, "dt"), min(dt, 0.1f));
+    glUniform1f(glGetUniformLocation(erosionProgram, "cellSize"), cellSize);
+    glUniform1f(glGetUniformLocation(erosionProgram, "capacity"), ErosionParams::capacity);
+    glUniform1f(glGetUniformLocation(erosionProgram, "erodeRate"), ErosionParams::erodeRate);
+    glUniform1f(glGetUniformLocation(erosionProgram, "depositRate"), ErosionParams::depositRate);
+    glUniform1f(glGetUniformLocation(erosionProgram, "fade"), ErosionParams::fade);
+    glUniform1f(glGetUniformLocation(erosionProgram, "resetDelta"), ErosionParams::resetDelta);
+    glUniform1f(glGetUniformLocation(erosionProgram, "maxBed"), ErosionParams::maxBed);
+
+    glBindImageTexture(0, quantityTex[currentQuantity], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+    glBindImageTexture(1, bathymetryTex[currentBathymetry], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+    glBindImageTexture(2, bathymetryTex[1 - currentBathymetry], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+    glBindImageTexture(3, sedimentTex[currentSediment], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+    glBindImageTexture(4, sedimentTex[target], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+    glDispatchCompute(groupsX, groupsY, 1);
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    currentSediment = target;
 }
 
 // --- Dispatch helpers -----------------------------------------------
@@ -445,10 +490,14 @@ void ComputeWaterSimulation::dispatchWaterRender() {
     glUniform1f(glGetUniformLocation(waterRenderProgram, "time"), ofGetElapsedTimef());
     glUniform1i(glGetUniformLocation(waterRenderProgram, "fluidType"), (int)fluidType);
     glUniform1f(glGetUniformLocation(waterRenderProgram, "lavaTemp"), lavaTemperature);
+    bool showErosion = erosionEnabled && erosionProgram && fluidType == FLUID_WATER;
+    glUniform1i(glGetUniformLocation(waterRenderProgram, "erosion"), showErosion ? 1 : 0);
+    glUniform1f(glGetUniformLocation(waterRenderProgram, "erosionGain"), ErosionParams::displayGain);
 
     glBindImageTexture(0, quantityTex[currentQuantity], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
     glBindImageTexture(1, bathymetryTex[currentBathymetry], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
     glBindImageTexture(2, outputTex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+    glBindImageTexture(3, sedimentTex[currentSediment], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 
     glDispatchCompute(groupsX, groupsY, 1);
     // outputTex is written here via image store (binding 2) and then sampled as a
@@ -595,6 +644,28 @@ void ComputeWaterSimulation::clearWater() {
         } else {
             if (zeros.empty()) zeros.assign((size_t)simWidth * simHeight * 4, 0.0f);
             glBindTexture(GL_TEXTURE_2D, quantityTex[i]);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, simWidth, simHeight, GL_RGBA, GL_FLOAT, zeros.data());
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+    }
+    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
+}
+
+void ComputeWaterSimulation::setErosionEnabled(bool on) {
+    if (on && !erosionEnabled) clearErosion();
+    erosionEnabled = on;
+}
+
+void ComputeWaterSimulation::clearErosion() {
+    std::vector<float> zeros;
+    for (int i = 0; i < 2; i++) {
+        if (!sedimentTex[i]) continue;
+        if (hasGlClearTexImage()) {
+            float clearColor[4] = {0, 0, 0, 0};
+            glClearTexImage(sedimentTex[i], 0, GL_RGBA, GL_FLOAT, clearColor);
+        } else {
+            if (zeros.empty()) zeros.assign((size_t)simWidth * simHeight * 4, 0.0f);
+            glBindTexture(GL_TEXTURE_2D, sedimentTex[i]);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, simWidth, simHeight, GL_RGBA, GL_FLOAT, zeros.data());
             glBindTexture(GL_TEXTURE_2D, 0);
         }

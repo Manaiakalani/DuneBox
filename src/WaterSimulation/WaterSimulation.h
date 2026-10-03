@@ -86,6 +86,12 @@ public:
     /// Remove all water (and lava) from the grid.
     void clearWater();
 
+    /// Show where flowing water would carve the sand and where sediment
+    /// would settle. Drawn only; the real sand is untouched. Not applied to lava.
+    void setErosionEnabled(bool on);
+    bool isErosionEnabled() const { return erosionEnabled; }
+    void clearErosion();
+
     void loadSettings(const std::string& path = "settings/waterSettings.xml");
     void saveSettings(const std::string& path = "settings/waterSettings.xml");
 
@@ -101,6 +107,7 @@ private:
     void applyBoundary(int targetIndex);
     void applyWaterAdditions(float stepSize);
     void applyWaterUpdate(int quantityIndex);
+    void applyErosion(float dt);
 
     // --- Fullscreen quad drawing ---
     void drawFullscreenQuad();
@@ -124,6 +131,10 @@ private:
     // Final rendered water overlay.
     ofFbo waterRenderFbo;
 
+    // Erosion layer: R = bed change, G = suspended sediment. Ping-pong.
+    ofFbo sedimentFbo[2];
+    int currentSediment = 0;
+
     // --- Shaders ---
     ofShader bathymetryUpdateShader;
     ofShader slopeFluxDerivShader;
@@ -133,6 +144,7 @@ private:
     ofShader waterAddShader;
     ofShader waterUpdateShader;
     ofShader waterRenderShader;
+    ofShader erosionShader;
 
     // --- Fullscreen quad mesh ---
     ofVboMesh quadMesh;
@@ -162,6 +174,7 @@ private:
     bool initialized;
     bool lavaActive;
     float evaporationRate = 0.0f;
+    bool erosionEnabled = false;
 
     // Saved base values for toggling lava mode
     float baseAttenuation;

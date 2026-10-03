@@ -82,6 +82,8 @@ private:
 	void waterSimClear();
 	void waterSimSetEvaporation(float rate);
 	float waterSimGetEvaporation() const;
+	void waterSimSetErosion(bool on);
+	bool waterSimIsErosion() const;
 
 	// Dashboard commands relayed by sandcam over the bridge
 	void handleDashboardCommand(const ofJson& msg);
