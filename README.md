@@ -1,13 +1,47 @@
 # 🏜️ DuneBox
 
+**An augmented reality sandbox with GPU water simulation.**
+
 > *Like a sandbox, but epic.*
 
-A Windows augmented reality sandbox that projects real-time topographic maps and GPU-accelerated water simulation onto physical sand using a Kinect depth camera and projector.
+DuneBox is a Windows C++ / OpenFrameworks app that turns a box of sand, a Kinect, and a projector into a live topographic map. Elevation colors and contour lines track the sand at 60 FPS; a GPU shallow-water solver lets rain and lava flow downhill. Shape the land with your hands — the box answers.
+
+By [Max](https://github.com/Manaiakalani) (Manaiakalani).
 
 ![Status](https://img.shields.io/badge/status-proof%20of%20concept-orange)
 ![Language](https://img.shields.io/badge/lang-C%2B%2B-blue)
 ![Framework](https://img.shields.io/badge/framework-OpenFrameworks-lightgrey)
 [![Build & Release](https://github.com/Manaiakalani/DuneBox/actions/workflows/build.yml/badge.svg)](https://github.com/Manaiakalani/DuneBox/actions/workflows/build.yml)
+[![Docs](https://img.shields.io/badge/docs-live-52a8ff)](https://manaiakalani.github.io/DuneBox-docs/)
+
+![Live topographic projection with a fish swimming on the sand](./art/animated-box.gif)
+
+## What / Why / Try it
+
+**What.** A Kinect depth camera reads the sand; a short-throw projector paints it back as contours, water, lava, and games. Derived from [Magic-Sand](https://github.com/thomwolf/Magic-Sand) and [SARndbox](https://github.com/KeckCAVES/SARndbox). Kinect v1/v2 on Windows; procedural terrain when no sensor is plugged in.
+
+**Why.** Research AR sandboxes are powerful and hard to run. DuneBox is the GPU-water sibling you can install from a script, calibrate in an afternoon, and leave on for a classroom or a Saturday at home — and still open the shaders when you want to change how the water moves.
+
+**Try it / Docs.**
+
+- **[Live docs](https://manaiakalani.github.io/DuneBox-docs/)** — hardware, physical build, setup, calibration, troubleshooting
+- **[DuneBox-docs](https://github.com/Manaiakalani/DuneBox-docs)** — the same guide as a repo, plus `setup-windows.ps1`
+- **[Latest release](https://github.com/Manaiakalani/DuneBox/releases/latest)** — pre-built Windows app (`Magic-Sand.exe`)
+- Or double-click **`run.bat`** in this repo (see [Quick Start](#quick-start))
+
+## Demo
+
+The clip above is the live projection: a topographic color map and a fish, painted onto the sand.
+
+Chessboard auto-calibration lining up the Kinect and the projector:
+
+![Calibration GUI on the left and the physical sandbox on the right](./art/calibration.gif)
+
+A typical physical setup — box, Kinect, and projector. These stills are from the upstream [Magic-Sand](https://github.com/thomwolf/Magic-Sand) project that DuneBox is derived from:
+
+![AR sandbox seen from above, with topographic colors on the sand](./art/general-view-2.jpg)
+
+![AR sandbox side view with projector and depth camera above the box](./art/general-view.jpg)
 
 ## Features
 
@@ -161,13 +195,21 @@ The water simulation uses GLSL shaders extracted from [SARndbox](https://github.
 | `T` | Run real-time test (debug) |
 | `W` | Run debug test |
 
-## See Also
+## Documentation
 
-- **[DuneBox-sandcam](https://github.com/Manaiakalani/DuneBox-sandcam)** — Python companion project with ArUco marker triggers and biome creatures
+| Link | What you get |
+|---|---|
+| **[Live docs](https://manaiakalani.github.io/DuneBox-docs/)** | Hardware, construction, software setup, calibration, troubleshooting, classroom and kiosk notes |
+| **[DuneBox-docs](https://github.com/Manaiakalani/DuneBox-docs)** | Source for that site, plus Windows setup scripts |
+| **[Render pipeline](docs/RENDER_PIPELINE_ANALYSIS.md)** | How depth becomes color on the sand |
+| **[Water shaders](bin/data/shaders/water/SHADER_ANALYSIS.md)** | SARndbox shader port and GPU pass list |
+| **[DuneBox-sandcam](https://github.com/Manaiakalani/DuneBox-sandcam)** | Python companion: ArUco marker triggers, biome creatures, web dashboard |
+
+The docs site is the complete build guide. This README is the C++ app: sensors, keys, water pipeline, and how to run or rebuild it.
 
 ## Credits & Acknowledgments
 
-DuneBox builds on the work of the open-source AR sandbox community:
+DuneBox is maintained by **Max** ([Manaiakalani](https://github.com/Manaiakalani)). It builds on the work of the open-source AR sandbox community:
 
 - **[Magic-Sand](https://github.com/thomwolf/Magic-Sand)** by Thomas Wolf & Rasmus R. Paulsen (DTU Copenhagen) — the cross-platform OpenFrameworks AR sandbox this project is derived from. Licensed under GPL-2.0.
 
@@ -180,7 +222,3 @@ DuneBox builds on the work of the open-source AR sandbox community:
 ## License
 
 Licensed under [GPL-2.0](COPYING), inherited from Magic-Sand and SARndbox.
-
-## Build Guide
-
-See **[DuneBox-docs](https://github.com/Manaiakalani/DuneBox-docs)** for the complete build guide — hardware, physical construction, software setup, calibration, troubleshooting, and customization.
