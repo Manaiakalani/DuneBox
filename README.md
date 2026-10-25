@@ -118,7 +118,7 @@ Or manually: clone this repo and double-click **`run.bat`** — it auto-download
 
 ### Put it on your desktop
 Double-click **`Install Desktop Shortcut.cmd`** once to add a **DuneBox
-(Magic-Sand C++)** icon to your desktop, then launch it with a double-click.
+(C++)** icon to your desktop, then launch it with a double-click.
 The installer is safe to re-run. (If you also have the `DuneBox-sandcam` repo
 checked out, its `Install Desktop Shortcuts.cmd` sets up both apps at once.)
 

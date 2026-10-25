@@ -22,14 +22,44 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 #include "ofMain.h"
 #include "ofApp.h"
+#include <fstream>
+#include <string>
 
 // Direct GLFW access for multi-monitor enumeration. OF bundles GLFW; define
 // GLFW_INCLUDE_NONE so it doesn't pull in its own GL headers (OF already does).
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-// Tracks the published DuneBox release, not the upstream Magic-Sand version.
-const std::string DuneBoxVersion = "0.2.0";
+// Window title tracks bin/data/VERSION, the published DuneBox release.
+// run.bat starts the exe with cwd bin/, so the live path is data/VERSION.
+// The other two cover a launch from the repo root.
+static std::string loadDuneBoxVersion() {
+	const char* candidates[] = {"data/VERSION", "bin/data/VERSION", "VERSION"};
+	for (const char* path : candidates) {
+		std::ifstream in(path);
+		if (!in) {
+			continue;
+		}
+		std::string line;
+		if (!std::getline(in, line)) {
+			continue;
+		}
+		while (!line.empty() && (line.back() == '\r' || line.back() == ' ' || line.back() == '\t')) {
+			line.pop_back();
+		}
+		std::size_t start = 0;
+		while (start < line.size() && (line[start] == ' ' || line[start] == '\t')) {
+			++start;
+		}
+		if (start > 0) {
+			line.erase(0, start);
+		}
+		if (!line.empty()) {
+			return line;
+		}
+	}
+	return "0.2.0";
+}
 
 bool setWindowDimensions(ofGLFWWindowSettings& settings, int windowsNum) {
 	int count;
@@ -77,7 +107,8 @@ int main() {
 	settings.setPosition(ofVec2f(0, 0));
 	settings.resizable = true;
 	settings.decorated = true;
-	settings.title = "DuneBox " + DuneBoxVersion;
+	const std::string duneBoxVersion = loadDuneBoxVersion();
+	settings.title = "DuneBox " + duneBoxVersion;
 
 	shared_ptr<ofAppBaseWindow> mainWindow;
 	try {

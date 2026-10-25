@@ -30,6 +30,18 @@ jobs:
       - name: Checkout DuneBox
         uses: actions/checkout@v5
 
+      - name: Keep design docs as pointers
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in DESIGN.md PRODUCT.md; do
+            lines=$(wc -l < "$f")
+            if [ "$lines" -gt 40 ]; then
+              echo "$f is $lines lines. Edit the copy in Manaiakalani/DuneBox-docs instead."
+              exit 1
+            fi
+          done
+
       - name: Install glslang
         run: sudo apt-get update && sudo apt-get install -y glslang-tools
 

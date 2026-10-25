@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    Installs (or refreshes) a desktop shortcut for the DuneBox Magic-Sand C++ app.
+    Installs (or refreshes) a desktop shortcut for the DuneBox C++ renderer.
     Safe to re-run.
 
 .DESCRIPTION
-    Creates a "DuneBox (Magic-Sand C++)" desktop shortcut that runs run.bat,
+    Creates a "DuneBox (C++)" desktop shortcut that runs run.bat,
     which launches bin\Magic-Sand.exe (auto-downloading the prebuilt binary from
     the GitHub release / latest successful CI build if it isn't present yet).
 
@@ -29,14 +29,23 @@ $IconPath = Join-Path $RepoRoot 'icon.ico'
 if (-not (Test-Path $RunBat)) { throw "Missing launcher: $RunBat" }
 
 $Shell    = New-Object -ComObject WScript.Shell
-$linkPath = Join-Path $Desktop 'DuneBox (Magic-Sand C++).lnk'
+$linkPath = Join-Path $Desktop 'DuneBox (C++).lnk'
 $sc = $Shell.CreateShortcut($linkPath)
 $sc.TargetPath       = $RunBat
 $sc.WorkingDirectory = $RepoRoot
 $sc.WindowStyle      = 7          # launch the console minimized - stays clean
-$sc.Description      = 'DuneBox Magic-Sand C++ renderer'
+$sc.Description      = 'DuneBox C++ renderer'
 if (Test-Path $IconPath) { $sc.IconLocation = "$IconPath,0" }
 $sc.Save()
 
+$legacy = Join-Path $Desktop 'DuneBox (Magic-Sand C++).lnk'
+if (Test-Path $legacy) {
+    $old = $Shell.CreateShortcut($legacy)
+    if ([string]::Equals($old.TargetPath, $RunBat, [StringComparison]::OrdinalIgnoreCase)) {
+        Remove-Item $legacy -Force
+        Write-Host "Removed previous shortcut: $legacy"
+    }
+}
+
 Write-Host "Installed desktop shortcut: $linkPath"
-Write-Host "Double-click 'DuneBox (Magic-Sand C++)' on your desktop to run."
+Write-Host "Double-click 'DuneBox (C++)' on your desktop to run."

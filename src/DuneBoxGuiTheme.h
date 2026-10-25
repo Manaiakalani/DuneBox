@@ -1,7 +1,7 @@
 #pragma once
 
-// Operator-panel styling shared with the sandcam dashboard and sidebar
-// (tokens in DESIGN.md). Geist is bundled in bin/data/fonts under the OFL.
+// Operator-panel styling shared with the sandcam dashboard and sidebar.
+// Tokens live in DuneBox-docs DESIGN.md. Geist is bundled in bin/data/fonts under the OFL.
 
 #include "ofxDatGui.h"
 #include <memory>
