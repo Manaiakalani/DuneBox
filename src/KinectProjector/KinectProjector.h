@@ -35,7 +35,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "ofxCv.h"
 #include "KinectGrabber.h"
 #include "KinectV2Handler.h"
-#include "AzureKinectHandler.h"
 #include "ofxModal.h"
 #include "../DuneBoxGuiTheme.h"
 
@@ -339,7 +338,6 @@ private:
     int                         kinectVersion;  // 1, 2, 3 or 4
     bool                        azureUnsupported;  // true if kinectVersion==3 (unsupported)
     KinectV2Handler             kinectV2;
-    AzureKinectHandler          azureKinect;
 
     //kinect buffer
     ofxCvFloatImage             FilteredDepthImage;

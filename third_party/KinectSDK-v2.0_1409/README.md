@@ -3,7 +3,7 @@
 This folder contains **only** the small compile/link files needed to build the
 Windows Kinect v2 backend (`ofxKinectForWindows2`):
 
-- `inc/` — public SDK headers (`Kinect.h`, etc.)
+- `inc/Kinect.h` and `inc/Kinect.INPC.h` — the headers the depth/color/body API needs. Face, Visual Gesture Builder, and Kinect Fusion headers are not included by this app.
 - `Lib/x64/Kinect20.lib` — the x64 **import library** (a link-time stub; it does
   **not** contain the runtime — `Kinect20.dll` is loaded at runtime on the user's
   machine from the installed Kinect for Windows Runtime/SDK).

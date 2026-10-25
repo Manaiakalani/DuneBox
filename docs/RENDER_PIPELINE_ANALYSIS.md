@@ -214,26 +214,20 @@ Games use ofClear(255,255,255,0) to start transparent, then draw opaque sprites.
 ### 5.1 Shader Directory Structure
 ```
 bin/data/shaders/
-├── shadersGL2/          ← GLSL 1.20 (legacy fixed-function)
-│   ├── elevationShader.vert
-│   ├── elevationShader.frag
-│   ├── heightMapShader.vert
-│   └── heightMapShader.frag
-└── shadersGL3/          ← GLSL 1.50 (programmable pipeline)  ← DEFAULT ON MODERN macOS
+└── shadersGL3/          ← GLSL 1.50, the only terrain shaders loaded
     ├── elevationShader.vert
     ├── elevationShader.frag
     ├── heightMapShader.vert
     └── heightMapShader.frag
 ```
 
+`main.cpp` creates a GL 4.3 context and falls back to GL 3.2. Both are programmable, so the old GLSL 1.20 and GLES sets are gone.
+
 ### 5.2 Shader Selection Logic
 ```cpp
-// SandSurfaceRenderer.cpp:116
-if (ofIsGLProgrammableRenderer()) {
-    // GL3+ path → shadersGL3/ (GLSL 150)
-} else {
-    // Legacy path → shadersGL2/ (GLSL 120)
-}
+// SandSurfaceRenderer.cpp
+elevationShader.load("shaders/shadersGL3/elevationShader");
+heightMapShader.load("shaders/shadersGL3/heightMapShader");
 ```
 
 ### 5.3 Elevation Shader (Pass 1)

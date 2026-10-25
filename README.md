@@ -156,8 +156,9 @@ DuneBox/
 │   ├── WaterSimulation/           # GPU water sim (extracted from SARndbox)
 │   └── Games/                     # Interactive creatures & games
 ├── bin/data/shaders/water/        # GLSL water simulation shaders
-│   ├── adapted/                   # GLSL 150 core-profile adapted shaders
-│   └── SHADER_ANALYSIS.md         # Shader pipeline documentation
+│   ├── compute/                   # GL 4.3 compute path (used when the 4.3 context succeeds)
+│   ├── adapted/                   # GLSL 150 fragment fallback
+│   └── SHADER_ANALYSIS.md         # Notes on the original SARndbox shader set
 └── docs/
     └── RENDER_PIPELINE_ANALYSIS.md
 ```

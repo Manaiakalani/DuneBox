@@ -69,9 +69,6 @@ void CMapGameController::setup(std::shared_ptr<KinectProjector> const& k)
 	if (!nameFont.loadFont("verdana.ttf", 128))
 		std::cout << "Could not read font verdana.ttf" << std::endl;
 
-	//if (!nameFont.loadFont("cooperBlack.ttf", 64))
-	//	std::cout << "Could not read font cooperBlack.ttf" << std::endl;
-
 	referenceMapHandler.Init();
 	referenceMapHandler.SetCycleMode(2);
 	int nRefMaps = referenceMapHandler.ReferenceMaps.size();
@@ -582,22 +579,6 @@ bool CMapGameController::CreateSplashScreen()
 	ofBackground(255);
 
 	splashScreen.draw(xs, ys, sWn, sHn);
-	//ofTrueTypeFont HeadingFont;
-	//if (!HeadingFont.loadFont("cooperBlack.ttf", 128))
-	//{
-	//	std::cout << "Could not read font cooperBlack.ttf" << std::endl;
-	//	return false;
-	//}
-
-	//std::string HeadText = "The Island Game";
-	//double sW = HeadingFont.stringWidth(HeadText);
-	//double sH = HeadingFont.stringHeight(HeadText);
-
-	//
-
-	////ofSetColor(31, 78, 121);
-	////nameFont.drawString(RefMapName, 200, projRes.y / 2);
-	////scoreFont.drawString(HScoreText, 100, projRes.y - 100);
 
 	fboProjWindow.end();
 	return true;

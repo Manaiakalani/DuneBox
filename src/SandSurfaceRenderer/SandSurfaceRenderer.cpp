@@ -110,28 +110,16 @@ void SandSurfaceRenderer::setup(bool sdisplayGui){
     //setup the mesh
     setupMesh();
     
-	// Load shaders
+	// main.cpp requests GL 4.3 and falls back to GL 3.2. Both are programmable,
+	// so the old GLSL 1.20 / GLES shader sets are not used.
     bool loaded = true;
-#ifdef TARGET_OPENGLES
-    ofLogVerbose("SandSurfaceRenderer") << "setup(): Loading shadersES2";
-	loaded = loaded && elevationShader.load("shaders/shadersES2/elevationShader");
-	loaded = loaded && heightMapShader.load("shaders/shadersES2/heightMapShader");
-#else
-	if(ofIsGLProgrammableRenderer()){
-        ofLogVerbose("SandSurfaceRenderer") << "setup(): Loading shadersGL3/elevationShader";
-		loaded = loaded && elevationShader.load("shaders/shadersGL3/elevationShader");
-        ofLogVerbose("SandSurfaceRenderer") << "setup(): Loading shadersGL3/heightMapShader";
-		loaded = loaded && heightMapShader.load("shaders/shadersGL3/heightMapShader");
-	}else{
-        ofLogVerbose("SandSurfaceRenderer") << "setup(): Loading shadersGL2/elevationShader";
-		loaded = loaded && elevationShader.load("shaders/shadersGL2/elevationShader");
-        ofLogVerbose("SandSurfaceRenderer") << "setup(): Loading shadersGL2/heightMapShader";
-		loaded = loaded && heightMapShader.load("shaders/shadersGL2/heightMapShader");
-	}
-#endif
+    ofLogVerbose("SandSurfaceRenderer") << "setup(): Loading shadersGL3/elevationShader";
+	loaded = loaded && elevationShader.load("shaders/shadersGL3/elevationShader");
+    ofLogVerbose("SandSurfaceRenderer") << "setup(): Loading shadersGL3/heightMapShader";
+	loaded = loaded && heightMapShader.load("shaders/shadersGL3/heightMapShader");
     if (!loaded)
     {
-        ofLogError("GreatSand") << "setup(): shader not loaded" ;
+        ofLogError("SandSurfaceRenderer") << "setup(): shader not loaded";
     }
     
     //Prepare fbo
