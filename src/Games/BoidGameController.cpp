@@ -256,8 +256,8 @@ void CBoidGameController::DrawScoresOnFBO()
 	//	"Score: " + ofToString((int)(Player2Skins + Player2Food));
 
 
-	sW = scoreFontSmall.stringWidth(P1ScoreStr);
-	sH = scoreFontSmall.stringHeight(P1ScoreStr);
+	sW = scoreFontSmall.stringWidth(P2ScoreStr);
+	sH = scoreFontSmall.stringHeight(P2ScoreStr);
 
 	sx = projROI.x + (3 * projROI.width / 4 - sW / 2);
 	sy = projROI.y + 70;

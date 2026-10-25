@@ -23,6 +23,43 @@ env:
   OF_VERSION: "0.12.0"
 
 jobs:
+  shaders:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout DuneBox
+        uses: actions/checkout@v5
+
+      - name: Install glslang
+        run: sudo apt-get update && sudo apt-get install -y glslang-tools
+
+      # The app loads these three sets. The original SARndbox Water2* sources
+      # in shaders/water/ are historical and are not compiled here.
+      - name: Compile loaded shaders
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          compile() {
+            local stage="$1" file="$2"
+            echo "== $stage $file"
+            # No --target-env: that flag compiles SPIR-V and rejects legal
+            # desktop GLSL 150 (no layout locations, which OF binds by name).
+            if ! glslangValidator -S "$stage" "$file"; then
+              fail=1
+            fi
+          }
+          while IFS= read -r -d '' f; do compile vert "$f"; done \
+            < <(find bin/data/shaders/shadersGL3 bin/data/shaders/water/adapted -name '*.vert' -print0)
+          while IFS= read -r -d '' f; do compile frag "$f"; done \
+            < <(find bin/data/shaders/shadersGL3 bin/data/shaders/water/adapted -name '*.frag' -print0)
+          while IFS= read -r -d '' f; do compile comp "$f"; done \
+            < <(find bin/data/shaders/water/compute -name '*.glsl' -print0)
+          if [ "$fail" -ne 0 ]; then
+            echo "Shader validation failed"
+            exit 1
+          fi
+
   build-windows:
     runs-on: windows-2022
     timeout-minutes: 45

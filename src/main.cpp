@@ -28,7 +28,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-const std::string MagicSandVersion = "1.5.4.2";
+// Tracks the published DuneBox release, not the upstream Magic-Sand version.
+const std::string DuneBoxVersion = "0.2.0";
 
 bool setWindowDimensions(ofGLFWWindowSettings& settings, int windowsNum) {
 	int count;
@@ -76,7 +77,7 @@ int main() {
 	settings.setPosition(ofVec2f(0, 0));
 	settings.resizable = true;
 	settings.decorated = true;
-	settings.title = "Magic-Sand " + MagicSandVersion;
+	settings.title = "DuneBox " + DuneBoxVersion;
 
 	shared_ptr<ofAppBaseWindow> mainWindow;
 	try {
