@@ -1,6 +1,8 @@
 @echo off
 :: DuneBox Launcher - runs the pre-built exe, or fetches it automatically.
-:: Order: local exe -> published release -> latest successful CI artifact.
+:: A published release downloads with no GitHub sign-in. An older install is
+:: replaced when that release is newer; live settings stay put.
+:: Order: newer published release -> local exe -> latest successful CI artifact.
 setlocal enabledelayedexpansion
 title DuneBox AR Sandbox
 
@@ -16,36 +18,47 @@ set "EXE=%BINDIR%\Magic-Sand.exe"
 set "REPO=Manaiakalani/DuneBox"
 set "ARTIFACT=DuneBox-windows-x64"
 
-:: 1) Already installed? Just run it.
-if exist "%EXE%" goto :run
-
-echo.
-echo  DuneBox binary not found - fetching the pre-built app...
-echo.
-
-:: Ensure GitHub CLI is available (needed for private-repo downloads).
+:: 1) An existing install with no gh CLI just runs. Do not winget on a kiosk boot.
+set "NEED_FETCH=0"
+if not exist "%EXE%" set "NEED_FETCH=1"
 where gh >nul 2>&1
-if %errorlevel% neq 0 (
+if errorlevel 1 (
+    if "!NEED_FETCH!"=="0" goto :run
     echo  Installing GitHub CLI...
     winget install --id GitHub.cli -e --silent --accept-source-agreements --accept-package-agreements >nul 2>&1
     set "PATH=%PATH%;%ProgramFiles%\GitHub CLI"
 )
 
-:: Ensure we're signed in (private repo).
-gh auth status >nul 2>&1
-if %errorlevel% neq 0 (
-    echo  One-time GitHub sign-in required...
-    gh auth login --hostname github.com --git-protocol https --web
+if "!NEED_FETCH!"=="0" (
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%release-is-newer.ps1" -Repo "%REPO%" -BinDir "%BINDIR%"
+    if errorlevel 1 goto :run
+    echo.
+    echo  A newer DuneBox release is available. Updating...
+    echo.
+) else (
+    echo.
+    echo  DuneBox binary not found - fetching the pre-built app...
+    echo.
 )
 
-:: 2) Try the latest published release asset.
+:: 2) Public release asset. No sign-in.
 set "ZIPFILE=%TEMP%\DuneBox-windows-x64.zip"
 if exist "%ZIPFILE%" del "%ZIPFILE%" >nul 2>&1
 gh release download --repo %REPO% --pattern "%ARTIFACT%.zip" --output "%ZIPFILE%" >nul 2>&1
 if exist "%ZIPFILE%" goto :extract
 
-:: 3) Fall back to the artifact from the latest successful build (no tag needed).
+if exist "%EXE%" (
+    echo  Could not download the update. Starting the installed copy.
+    goto :run
+)
+
+:: 3) CI artifacts are not public downloads. Sign in only for this fallback.
 echo  No release yet - checking latest successful CI build...
+gh auth status >nul 2>&1
+if errorlevel 1 (
+    echo  One-time GitHub sign-in required to download a CI build...
+    gh auth login --hostname github.com --git-protocol https --web
+)
 for /f "usebackq delims=" %%i in (`gh run list --repo %REPO% --workflow "Build & Release" --status success --limit 1 --json databaseId --jq ".[0].databaseId" 2^>nul`) do set "RUNID=%%i"
 if not "%RUNID%"=="" (
     set "ADIR=%TEMP%\dunebox-artifact"

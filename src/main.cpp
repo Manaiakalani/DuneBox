@@ -58,7 +58,7 @@ static std::string loadDuneBoxVersion() {
 			return line;
 		}
 	}
-	return "0.2.0";
+	return "0.2.1";
 }
 
 bool setWindowDimensions(ofGLFWWindowSettings& settings, int windowsNum) {
