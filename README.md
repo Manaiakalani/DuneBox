@@ -108,7 +108,7 @@ cd DuneBox-docs\scripts; .\setup-windows.ps1
 ```
 This downloads the pre-built app, creates desktop shortcuts, and you're done.
 
-Or manually: clone this repo and double-click **`run.bat`** — it auto-downloads the latest release.
+Or manually: clone this repo and double-click **`run.bat`**. It fast-forwards this checkout, then downloads the latest release. A failed update still starts the copy already on disk.
 
 > **Prerequisite:** the pre-built app needs the [Microsoft Visual C++
 > Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe). If it's

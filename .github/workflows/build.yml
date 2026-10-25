@@ -340,3 +340,29 @@ jobs:
         with:
           files: DuneBox-windows-x64.zip
           generate_release_notes: true
+
+  powershell:
+    name: PowerShell parse
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - name: Checkout DuneBox
+        uses: actions/checkout@v5
+
+      - name: Parse check (fail on syntax errors)
+        shell: pwsh
+        run: |
+          $failed = $false
+          Get-ChildItem -Path . -Filter *.ps1 -File | ForEach-Object {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors) {
+              $failed = $true
+              Write-Host "::group::Parse errors in $($_.Name)"
+              $errors | ForEach-Object { Write-Host "::error::$($_.Extent.File): line $($_.Extent.StartLineNumber): $($_.Message)" }
+              Write-Host "::endgroup::"
+            } else {
+              Write-Host "OK: $($_.Name)"
+            }
+          }
+          if ($failed) { exit 1 }

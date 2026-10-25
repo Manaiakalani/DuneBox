@@ -1,22 +1,39 @@
 @echo off
-:: DuneBox Launcher - runs the pre-built exe, or fetches it automatically.
-:: A published release downloads with no GitHub sign-in. An older install is
-:: replaced when that release is newer; live settings stay put.
-:: Order: newer published release -> local exe -> latest successful CI artifact.
+:: DuneBox Launcher - fast-forwards this checkout, then runs the pre-built exe
+:: or fetches it. A published release downloads with no GitHub sign-in.
+:: An older install is replaced when that release is newer; live settings stay put.
+:: Order: checkout fast-forward -> newer published release -> local exe -> CI artifact.
+:: Windows reads this file as it goes, so a pull that replaces run.bat restarts
+:: the launcher once (--updated) before the release check.
 setlocal enabledelayedexpansion
 title DuneBox AR Sandbox
-
-echo.
-echo  NOTE: Run only ONE DuneBox app at a time - either this C++ Magic-Sand
-echo        OR the Python sandcam. They both open the exclusive Kinect v2,
-echo        so running both at once will cause "no Kinect connected" errors.
-echo.
 
 set "ROOT=%~dp0"
 set "BINDIR=%ROOT%bin"
 set "EXE=%BINDIR%\Magic-Sand.exe"
 set "REPO=Manaiakalani/DuneBox"
 set "ARTIFACT=DuneBox-windows-x64"
+
+:: The parenthesis block is read in full before git runs, so the relaunch still
+:: happens when the pull replaces run.bat.
+if /I "%~1"=="--updated" goto :afterupdate
+
+(
+echo  Checking the DuneBox checkout...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%update-checkout.ps1"
+if errorlevel 10 (
+    "%~f0" --updated
+    exit /b 0
+)
+)
+
+:afterupdate
+echo.
+echo  NOTE: sandcam and DuneBox (C++) can run together. In sandcam, turn on
+echo        "Share this sensor with DuneBox", and set kinectVersion to 4 in
+echo        bin\data\settings\kinectProjectorSettings.xml.
+echo        Opening Kinect v2 from both apps at once makes the camera look disconnected.
+echo.
 
 :: 1) An existing install with no gh CLI just runs. Do not winget on a kiosk boot.
 set "NEED_FETCH=0"
