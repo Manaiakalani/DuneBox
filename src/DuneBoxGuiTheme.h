@@ -65,6 +65,8 @@ struct GuiTheme : public ofxDatGuiComponent {
 		t->layout.upperCaseLabels = false;
 		t->layout.textInput.forceUpperCase = false;
 
+		// One font per theme. Labels stay Geist Medium. Projected scores and
+		// timers load fonts/GeistMono-Regular.ttf themselves.
 		t->font.file = "fonts/Geist-Medium.ttf";
 		t->font.size = 8;
 

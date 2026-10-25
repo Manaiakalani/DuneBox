@@ -1,6 +1,6 @@
 # DuneBox Render Pipeline Analysis
 
-> Analysis of the Magic-Sand (DuneBox) render pipeline for SARndbox water simulation integration.
+> Historical note, not the current pipeline. Written while the SARndbox water sim was being ported. The running code is `src/WaterSimulation/`, `bin/data/shaders/water/adapted/`, and `bin/data/shaders/water/compute/`. `main.cpp` requests GL 4.3 and falls back to GL 3.2.
 
 ---
 

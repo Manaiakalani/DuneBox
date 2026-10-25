@@ -56,12 +56,12 @@ void CBoidGameController::setup(std::shared_ptr<KinectProjector> const& k)
 	kinectProjector = k;
 
 	ofTrueTypeFont::setGlobalDpi(72);
-	if (!scoreFont.loadFont("verdana.ttf", 64))
-		std::cout << "Could not read font verdana.ttf" << std::endl;
-	if (!scoreFontSmall.loadFont("verdana.ttf", 32))
-		std::cout << "Could not read font verdana.ttf" << std::endl;
-	if (!nameFont.loadFont("verdana.ttf", 128))
-		std::cout << "Could not read font verdana.ttf" << std::endl;
+	if (!scoreFont.loadFont("fonts/GeistMono-Regular.ttf", 64))
+		std::cout << "Could not read font fonts/GeistMono-Regular.ttf" << std::endl;
+	if (!scoreFontSmall.loadFont("fonts/GeistMono-Regular.ttf", 32))
+		std::cout << "Could not read font fonts/GeistMono-Regular.ttf" << std::endl;
+	if (!nameFont.loadFont("fonts/Geist-Medium.ttf", 128))
+		std::cout << "Could not read font fonts/Geist-Medium.ttf" << std::endl;
 
 	// Vehicles
 	showMotherFish = false;
@@ -303,7 +303,7 @@ void CBoidGameController::DrawFinalScoresOnFBO()
 
 	}
 
-	scoreFont.drawString(scorestr, sx, sy);
+	nameFont.drawString(scorestr, sx, sy);
 }
 
 void CBoidGameController::drawMainWindow(float x, float y, float width, float height) 

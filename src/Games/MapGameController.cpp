@@ -64,10 +64,10 @@ void CMapGameController::setup(std::shared_ptr<KinectProjector> const& k)
 	kinectProjector = k;
 
 	ofTrueTypeFont::setGlobalDpi(72);
-	if (!scoreFont.loadFont("verdana.ttf", 64))
-		std::cout << "Could not read font verdana.ttf" << std::endl;
-	if (!nameFont.loadFont("verdana.ttf", 128))
-		std::cout << "Could not read font verdana.ttf" << std::endl;
+	if (!scoreFont.loadFont("fonts/GeistMono-Regular.ttf", 64))
+		std::cout << "Could not read font fonts/GeistMono-Regular.ttf" << std::endl;
+	if (!nameFont.loadFont("fonts/Geist-Medium.ttf", 128))
+		std::cout << "Could not read font fonts/Geist-Medium.ttf" << std::endl;
 
 	referenceMapHandler.Init();
 	referenceMapHandler.SetCycleMode(2);

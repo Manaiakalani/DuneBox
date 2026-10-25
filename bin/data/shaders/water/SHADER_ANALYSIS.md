@@ -1,7 +1,6 @@
 # SARndbox Shader Pipeline Analysis for DuneBox Port
 
-> Comprehensive reverse-engineering of the KeckCAVES/SARndbox-2.6 water simulation
-> pipeline. Source: Oliver Kreylos, 2012–2018. GPL v2.
+> Historical note, not the shader set the app loads. This document describes the original SARndbox `Water2*` sources in this folder. DuneBox runs `adapted/` on the fragment fallback and `compute/` when the GL 4.3 context succeeds. Source: Oliver Kreylos, 2012–2018. GPL v2.
 
 ---
 
