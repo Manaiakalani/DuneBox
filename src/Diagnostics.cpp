@@ -19,7 +19,7 @@ static DiagnosticItem probeKinect(int kinectVersion, bool kinectConnected) {
     if (kinectVersion == 2) {
         if (kinectConnected)
             return {"Kinect", "v2 connected", DiagnosticItem::OK};
-        return {"Kinect", "v2 not opened - may be in use by another app", DiagnosticItem::ERR};
+        return {"Kinect", "v2 not opened. If sandcam has the camera, set kinectVersion 4 and turn on \"Share this sensor with DuneBox\"", DiagnosticItem::ERR};
     }
     if (kinectVersion == 3) {
         return {"Kinect", "Azure (v3) - unsupported in this build; use 4 with sandcam instead", DiagnosticItem::WARN};
