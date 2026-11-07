@@ -6,6 +6,8 @@
 
 DuneBox is a Windows C++ / OpenFrameworks app that turns a box of sand, a Kinect, and a projector into a live topographic map. Elevation colors and contour lines track the sand at 60 FPS; a GPU shallow-water solver lets rain and lava flow downhill. Shape the land with your hands — the box answers.
 
+![DuneBox from the side: a Kinect and a short-throw projector over the sand, with the booth computer beside the box](docs/diagrams/hardware-cutaway.png)
+
 By [Max](https://github.com/Manaiakalani) (Manaiakalani).
 
 ![Status](https://img.shields.io/badge/status-proof%20of%20concept-orange)
@@ -166,6 +168,8 @@ DuneBox/
 ## Water Simulation
 
 The water simulation uses GLSL shaders extracted from [SARndbox](https://github.com/KeckCAVES/SARndbox) and adapted to run cross-platform via OpenFrameworks `ofFbo` multi-pass rendering.
+
+![One frame of water: eight GLSL passes from bathymetry to the blue overlay](docs/diagrams/water-simulation.png)
 
 **Pipeline (per frame):**
 1. Bathymetry update (sync terrain with Kinect depth)
