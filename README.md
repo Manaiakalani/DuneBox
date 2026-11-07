@@ -4,7 +4,7 @@
 
 > *Like a sandbox, but epic.*
 
-DuneBox is a Windows C++ / OpenFrameworks app that turns a box of sand, a Kinect, and a projector into a live topographic map. Elevation colors and contour lines track the sand at 60 FPS; a GPU shallow-water solver lets rain and lava flow downhill. Shape the land with your hands — the box answers.
+DuneBox is a Windows C++ / OpenFrameworks app that turns a box of sand, a Kinect, and a projector into a live topographic map. Elevation colors and contour lines track the sand at 60 FPS; a GPU shallow-water solver lets rain and lava flow downhill. Shape the land with your hands: the box answers.
 
 ![DuneBox from the side: a Kinect and a short-throw projector over the sand, with the booth computer beside the box](docs/diagrams/hardware-cutaway.png)
 
@@ -22,13 +22,13 @@ By [Max](https://github.com/Manaiakalani) (Manaiakalani).
 
 **What.** A Kinect depth camera reads the sand; a short-throw projector paints it back as contours, water, lava, and games. Derived from [Magic-Sand](https://github.com/thomwolf/Magic-Sand) and [SARndbox](https://github.com/KeckCAVES/SARndbox). Kinect v1/v2 on Windows; procedural terrain when no sensor is plugged in.
 
-**Why.** Research AR sandboxes are powerful and hard to run. DuneBox is the GPU-water sibling you can install from a script, calibrate in an afternoon, and leave on for a classroom or a Saturday at home — and still open the shaders when you want to change how the water moves.
+**Why.** Research AR sandboxes are powerful and hard to run. DuneBox is the GPU-water sibling you can install from a script, calibrate in an afternoon, and leave on for a classroom or a Saturday at home: and still open the shaders when you want to change how the water moves.
 
 **Try it / Docs.**
 
-- **[Live docs](https://manaiakalani.github.io/DuneBox-docs/)** — hardware, physical build, setup, calibration, troubleshooting
-- **[DuneBox-docs](https://github.com/Manaiakalani/DuneBox-docs)** — the same guide as a repo, plus `setup-windows.ps1`
-- **[Latest release](https://github.com/Manaiakalani/DuneBox/releases/latest)** — pre-built Windows app (`Magic-Sand.exe`)
+- **[Live docs](https://manaiakalani.github.io/DuneBox-docs/)**: hardware, physical build, setup, calibration, troubleshooting
+- **[DuneBox-docs](https://github.com/Manaiakalani/DuneBox-docs)**: the same guide as a repo, plus `setup-windows.ps1`
+- **[Latest release](https://github.com/Manaiakalani/DuneBox/releases/latest)**: pre-built Windows app (`Magic-Sand.exe`)
 - Or double-click **`run.bat`** in this repo (see [Quick Start](#quick-start))
 
 ## Demo
@@ -39,7 +39,7 @@ Chessboard auto-calibration lining up the Kinect and the projector:
 
 ![Calibration GUI on the left and the physical sandbox on the right](./art/calibration.gif)
 
-A typical physical setup — box, Kinect, and projector. These stills are from the upstream [Magic-Sand](https://github.com/thomwolf/Magic-Sand) project that DuneBox is derived from:
+A typical physical setup: box, Kinect, and projector. These stills are from the upstream [Magic-Sand](https://github.com/thomwolf/Magic-Sand) project that DuneBox is derived from:
 
 ![AR sandbox seen from above, with topographic colors on the sand](./art/general-view-2.jpg)
 
@@ -47,12 +47,12 @@ A typical physical setup — box, Kinect, and projector. These stills are from t
 
 ## Features
 
-- **Topographic mapping** — real-time contour lines and elevation color coding at 60 FPS
-- **GPU water simulation** — shallow-water equations (Saint-Venant) solved via RK2 integration on GPU
-- **Rain gesture** — wave your hand above the sand to make it rain; water flows downhill realistically
-- **Interactive games** — fish, sharks, island shaping, and more
-- **Auto-calibration** — chessboard-based projector-Kinect alignment
-- **No-Kinect mode** — procedural terrain for development/testing without hardware
+- **Topographic mapping**: real-time contour lines and elevation color coding at 60 FPS
+- **GPU water simulation**: shallow-water equations (Saint-Venant) solved via RK2 integration on GPU
+- **Rain gesture**: wave your hand above the sand to make it rain; water flows downhill realistically
+- **Interactive games**: fish, sharks, island shaping, and more
+- **Auto-calibration**: chessboard-based projector-Kinect alignment
+- **No-Kinect mode**: procedural terrain for development/testing without hardware
 
 ## Hardware Requirements
 
@@ -67,10 +67,10 @@ A typical physical setup — box, Kinect, and projector. These stills are from t
 
 | Sensor | `kinectVersion` | Addon Required | Depth Resolution | Compile Flag |
 |---|---|---|---|---|
-| Kinect v1 (Xbox 360) | `1` | ofxKinect (built-in) | 640×480 | — |
+| Kinect v1 (Xbox 360) | `1` | ofxKinect (built-in) | 640×480 | - |
 | Kinect v2 (Xbox One) | `2` (committed default) | ofxKinectForWindows2 + Kinect for Windows SDK 2.0 | 512×424 | `DUNEBOX_USE_KINECT_FOR_WINDOWS2` |
-| Azure Kinect DK | `3` | **not supported in this binary** | — | — |
-| Orbbec Femto Bolt | `3` | **not supported in this binary** | — | — |
+| Azure Kinect DK | `3` | **not supported in this binary** | - | - |
+| Orbbec Femto Bolt | `3` | **not supported in this binary** | - | - |
 
 ### Switching sensors
 
@@ -101,7 +101,7 @@ Azure Kinect / Orbbec Femto Bolt (`kinectVersion=3`) is **not supported** in the
 
 ## Quick Start
 
-### Windows (easiest — no build tools needed)
+### Windows (easiest: no build tools needed)
 ```powershell
 # One-line setup (run as admin):
 Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -125,7 +125,7 @@ The installer is safe to re-run. (If you also have the `DuneBox-sandcam` repo
 checked out, its `Install Desktop Shortcuts.cmd` sets up both apps at once.)
 
 ### Build from source (if you want to modify the code)
-This repo ships **no IDE project files** — generate them with
+This repo ships **no IDE project files**: generate them with
 OpenFrameworks' projectGenerator.
 
 > **Git LFS:** the reference map imagery under `bin/data/` is stored with
@@ -193,7 +193,7 @@ The water simulation uses GLSL shaders extracted from [SARndbox](https://github.
 | `b` | Send ping to Python bridge |
 | `space` | Start map game (if idle) / advance game step / start app from setup |
 | `f` or `r` | Start fish game (boid mode 2) / end map game |
-| `1`–`4` | Start boid game at difficulty 0–3 |
+| `1`-`4` | Start boid game at difficulty 0-3 |
 | `m` | Start "seek mother" game |
 | `c` | Save Kinect color image to disk |
 | `d` | Save filtered depth image to disk |
@@ -216,13 +216,13 @@ The docs site is the complete build guide. This README is the C++ app: sensors, 
 
 DuneBox is maintained by **Max** ([Manaiakalani](https://github.com/Manaiakalani)). It builds on the work of the open-source AR sandbox community:
 
-- **[Magic-Sand](https://github.com/thomwolf/Magic-Sand)** by Thomas Wolf & Rasmus R. Paulsen (DTU Copenhagen) — the cross-platform OpenFrameworks AR sandbox this project is derived from. Licensed under GPL-2.0.
+- **[Magic-Sand](https://github.com/thomwolf/Magic-Sand)** by Thomas Wolf & Rasmus R. Paulsen (DTU Copenhagen): the cross-platform OpenFrameworks AR sandbox this project is derived from. Licensed under GPL-2.0.
 
-- **[SARndbox](https://github.com/KeckCAVES/SARndbox)** by Oliver Kreylos (UC Davis / KeckCAVES) — the original AR sandbox. The water simulation GLSL shaders in `bin/data/shaders/water/` are extracted and adapted from this project. Licensed under GPL-2.0. [Official site](https://arsandbox.ucdavis.edu/)
+- **[SARndbox](https://github.com/KeckCAVES/SARndbox)** by Oliver Kreylos (UC Davis / KeckCAVES): the original AR sandbox. The water simulation GLSL shaders in `bin/data/shaders/water/` are extracted and adapted from this project. Licensed under GPL-2.0. [Official site](https://arsandbox.ucdavis.edu/)
 
-- **[sARndbox erosion mod](https://github.com/danigeos/sARndbox)** by danigeos — erosion and sedimentation simulation
-- **[ARSandbox-Adds](https://github.com/RiverWeyTrust/ARSandbox-Adds)** by River Wey Trust — weather effects (lava, snow)
-- [r/arsandbox](https://reddit.com/r/arsandbox) — community subreddit
+- **[sARndbox erosion mod](https://github.com/danigeos/sARndbox)** by danigeos: erosion and sedimentation simulation
+- **[ARSandbox-Adds](https://github.com/RiverWeyTrust/ARSandbox-Adds)** by River Wey Trust: weather effects (lava, snow)
+- [r/arsandbox](https://reddit.com/r/arsandbox): community subreddit
 
 ## License
 
