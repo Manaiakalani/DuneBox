@@ -10,6 +10,9 @@
 
     A missing git checkout, a failed pull, or a timeout exits 0. The binary
     update still runs from the copy already on disk.
+
+    After a successful pull, the desktop shortcut skips this check for 6 hours.
+    A failed pull does not count. The kiosk does not call this script.
 #>
 [CmdletBinding()]
 param()
@@ -48,7 +51,35 @@ function Get-LauncherHash {
     return (Get-FileHash -Algorithm SHA256 -Path $Launcher).Hash
 }
 
+$RememberHours = 6
+$stampPath = $null
+if ($env:LOCALAPPDATA) {
+    $stampPath = Join-Path $env:LOCALAPPDATA 'DuneBox\cpp-checkout.stamp'
+}
+
+function Write-CheckStamp {
+    if (-not $stampPath) { return }
+    try {
+        $dir = Split-Path -Parent $stampPath
+        if (-not (Test-Path -LiteralPath $dir)) {
+            New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        }
+        Set-Content -LiteralPath $stampPath -Value (Get-Date -Format o) -Encoding ascii
+    } catch {}
+}
+
+function Test-CheckStampFresh {
+    if (-not $stampPath) { return $false }
+    if (-not (Test-Path -LiteralPath $stampPath)) { return $false }
+    $age = (Get-Date) - (Get-Item -LiteralPath $stampPath).LastWriteTime
+    return $age.TotalHours -lt $RememberHours
+}
+
 try {
+    if (Test-CheckStampFresh) {
+        Write-Host "  DuneBox checkout was checked in the last $RememberHours hours."
+        exit 0
+    }
     $before = Get-LauncherHash
     if (-not (Test-Path -LiteralPath (Join-Path $Root '.git'))) {
         Write-Host '  No DuneBox git checkout. Starting the installed copy.'
@@ -76,6 +107,7 @@ try {
     }
 
     Write-Host '  DuneBox checkout is up to date.'
+    Write-CheckStamp
     $after = Get-LauncherHash
     if ($before -ne '' -and $after -ne $before) {
         Write-Host '  Launcher updated. Starting it again.'

@@ -47,7 +47,7 @@ if errorlevel 1 (
 )
 
 if "!NEED_FETCH!"=="0" (
-    powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%release-is-newer.ps1" -Repo "%REPO%" -BinDir "%BINDIR%"
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%release-is-newer.ps1" -Repo "%REPO%" -BinDir "%BINDIR%" -RememberHours 6
     if errorlevel 1 goto :run
     echo.
     echo  A newer DuneBox release is available. Updating...
@@ -112,6 +112,7 @@ if not exist "%EXE%" (
     pause
     exit /b 1
 )
+powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%release-is-newer.ps1" -Repo "%REPO%" -BinDir "%BINDIR%" -TouchStamp >nul 2>&1
 
 :run
 call :check_v2_runtime

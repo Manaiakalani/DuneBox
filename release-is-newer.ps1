@@ -1,12 +1,51 @@
 # Exit 0 when the latest published release is newer than bin\data\VERSION.
 # Exit 1 when it is not, or when the check cannot be completed.
 # A missing or unreadable VERSION counts as 0.0.0, so an old install updates.
+#
+# -RememberHours is for the desktop shortcut only. After a completed check
+# that is not newer, the next call within that many hours skips the network.
+# A failed check does not count. -TouchStamp records a successful download.
+# The kiosk and setup script omit both, so they check every time.
 param(
     [Parameter(Mandatory = $true)][string]$Repo,
-    [Parameter(Mandatory = $true)][string]$BinDir
+    [Parameter(Mandatory = $true)][string]$BinDir,
+    [int]$RememberHours = 0,
+    [switch]$TouchStamp
 )
 
 $ErrorActionPreference = "Stop"
+
+$stampPath = $null
+if ($env:LOCALAPPDATA) {
+    $stampPath = Join-Path $env:LOCALAPPDATA "DuneBox\cpp-release.stamp"
+}
+
+function Write-CheckStamp {
+    if (-not $stampPath) { return }
+    try {
+        $dir = Split-Path -Parent $stampPath
+        if (-not (Test-Path -LiteralPath $dir)) {
+            New-Item -ItemType Directory -Path $dir -Force | Out-Null
+        }
+        Set-Content -LiteralPath $stampPath -Value (Get-Date -Format o) -Encoding ascii
+    } catch {}
+}
+
+function Test-CheckStampFresh([int]$Hours) {
+    if (-not $stampPath) { return $false }
+    if (-not (Test-Path -LiteralPath $stampPath)) { return $false }
+    $age = (Get-Date) - (Get-Item -LiteralPath $stampPath).LastWriteTime
+    return $age.TotalHours -lt $Hours
+}
+
+if ($TouchStamp) {
+    Write-CheckStamp
+    exit 0
+}
+if ($RememberHours -gt 0 -and (Test-CheckStampFresh $RememberHours)) {
+    Write-Host "  DuneBox release was checked in the last $RememberHours hours."
+    exit 1
+}
 
 function ConvertTo-ReleaseVersion([string]$Text) {
     if ($Text -match '(\d+)\.(\d+)\.(\d+)') {
@@ -41,4 +80,5 @@ if (-not $tag) { exit 1 }
 $remote = ConvertTo-ReleaseVersion $tag.Trim()
 if (-not $remote) { exit 1 }
 if ($remote -gt $local) { exit 0 }
+if ($RememberHours -gt 0) { Write-CheckStamp }
 exit 1
