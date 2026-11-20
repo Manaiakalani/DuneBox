@@ -1,22 +1,33 @@
-# 🏜️ DuneBox
-
-**An augmented reality sandbox with GPU water simulation.**
-
-> *Like a sandbox, but epic.*
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg" />
+    <img src="docs/assets/logo.svg" alt="DuneBox logo" width="96" />
+  </picture>
+  <h1>DuneBox</h1>
+  <p><strong>An augmented reality sandbox with GPU water simulation.</strong></p>
+  <p>
+    <a href="https://github.com/Manaiakalani/DuneBox/blob/main/COPYING"><img src="https://img.shields.io/github/license/Manaiakalani/DuneBox" alt="License: GPL-2.0" /></a>
+    <a href="https://github.com/Manaiakalani/DuneBox/releases/latest"><img src="https://img.shields.io/github/v/release/Manaiakalani/DuneBox" alt="Latest release" /></a>
+    <a href="https://github.com/Manaiakalani/DuneBox/actions/workflows/build.yml"><img src="https://github.com/Manaiakalani/DuneBox/actions/workflows/build.yml/badge.svg" alt="Build and Release" /></a>
+    <a href="https://manaiakalani.github.io/DuneBox-docs/"><img src="https://img.shields.io/badge/docs-live-52a8ff" alt="Docs" /></a>
+  </p>
+  <p>
+    <a href="https://manaiakalani.github.io/DuneBox-docs/">Docs</a> ·
+    <a href="#features">Features</a> ·
+    <a href="#quick-start">Getting started</a>
+  </p>
+  <a href="./art/animated-box.mp4">
+    <img src="./art/animated-box.gif" alt="Live topographic projection with a fish swimming on the sand" />
+  </a>
+</div>
 
 DuneBox is a Windows C++ / OpenFrameworks app that turns a box of sand, a Kinect, and a projector into a live topographic map. Elevation colors and contour lines track the sand at 60 FPS; a GPU shallow-water solver lets rain and lava flow downhill. Shape the land with your hands: the box answers.
+
+> *Like a sandbox, but epic.*
 
 ![DuneBox from the side: a Kinect and a short-throw projector over the sand, with the booth computer beside the box](docs/diagrams/hardware-cutaway.png)
 
 By [Max](https://github.com/Manaiakalani) (Manaiakalani).
-
-![Status](https://img.shields.io/badge/status-proof%20of%20concept-orange)
-![Language](https://img.shields.io/badge/lang-C%2B%2B-blue)
-![Framework](https://img.shields.io/badge/framework-OpenFrameworks-lightgrey)
-[![Build & Release](https://github.com/Manaiakalani/DuneBox/actions/workflows/build.yml/badge.svg)](https://github.com/Manaiakalani/DuneBox/actions/workflows/build.yml)
-[![Docs](https://img.shields.io/badge/docs-live-52a8ff)](https://manaiakalani.github.io/DuneBox-docs/)
-
-![Live topographic projection with a fish swimming on the sand](./art/animated-box.gif)
 
 ## What / Why / Try it
 
@@ -37,7 +48,9 @@ The clip above is the live projection: a topographic color map and a fish, paint
 
 Chessboard auto-calibration lining up the Kinect and the projector:
 
-![Calibration GUI on the left and the physical sandbox on the right](./art/calibration.gif)
+<a href="./art/calibration.mp4">
+  <img src="./art/calibration.gif" alt="Calibration GUI on the left and the physical sandbox on the right" width="800" />
+</a>
 
 A typical physical setup: box, Kinect, and projector. These stills are from the upstream [Magic-Sand](https://github.com/thomwolf/Magic-Sand) project that DuneBox is derived from:
 
