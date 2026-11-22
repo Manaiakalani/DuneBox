@@ -127,7 +127,7 @@ GLuint ComputeWaterSimulation::allocateTexture(int w, int h, GLenum internalForm
     } else {
         // Fallback for GL 4.3: upload a zero-filled buffer via glTexSubImage2D
         size_t pixelSize = (internalFormat == GL_RGBA32F) ? sizeof(float) * 4 : 4;
-        std::vector<unsigned char> zeros(w * h * pixelSize, 0);
+        std::vector<unsigned char> zeros((size_t)w * h * pixelSize, 0);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, format, type, zeros.data());
     }
     
