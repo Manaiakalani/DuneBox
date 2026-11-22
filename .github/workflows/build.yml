@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout DuneBox
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Keep design docs as pointers
         shell: bash
@@ -77,7 +77,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout DuneBox
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           path: project
           lfs: true
@@ -347,7 +347,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout DuneBox
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Parse check (fail on syntax errors)
         shell: pwsh
